@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/utils';
-import { IconPlay, IconPlus, IconArrowRight, IconHeart, IconZap, IconRadio, IconFilm, IconMic, IconChat } from '@/components/ui/Icons';
+import { IconPlay, IconPlus, IconArrowRight, IconHeart } from '@/components/ui/Icons';
 
 const SECRET = 'heart';
 
@@ -32,10 +32,7 @@ export default function HomePage() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       bufRef.current = (bufRef.current + e.key.toLowerCase()).slice(-20);
-      if (bufRef.current.includes(SECRET)) {
-        bufRef.current = '';
-        triggerEE();
-      }
+      if (bufRef.current.includes(SECRET)) { bufRef.current = ''; triggerEE(); }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -48,7 +45,7 @@ export default function HomePage() {
     if (clickRef.current >= 5) { clickRef.current = 0; triggerEE(); }
   };
 
-  const triggerEE = () => { setShowEE(true); setTimeout(() => setShowEE(false), 5000); };
+  const triggerEE = () => { setShowEE(true); setTimeout(() => setShowEE(false), 6000); };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -80,114 +77,120 @@ export default function HomePage() {
     router.push(`/room/${joinCode.trim()}`);
   };
 
-  const fade = {
-    hidden: { opacity: 0, y: 16 },
-    show: (i: number) => ({
-      opacity: 1, y: 0,
-      transition: { duration: 0.5, delay: i * 0.07, ease: [0.25, 1, 0.5, 1] as const },
-    }),
-  };
-
   if (authLoading) {
-    return <div className="min-h-dvh flex items-center justify-center"><div className="spinner" style={{ width: 28, height: 28 }} /></div>;
+    return (
+      <div className="min-h-dvh flex items-center justify-center bg-[var(--color-bg-0)]">
+        <div className="spinner" style={{ width: 24, height: 24 }} />
+      </div>
+    );
   }
 
   return (
-    <main className="min-h-dvh flex flex-col items-center justify-center px-5 py-12">
+    <div className="min-h-dvh bg-[var(--color-bg-0)] flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
       <div className="bg-noise" />
       <AnimatePresence>{showEE && <EasterEgg />}</AnimatePresence>
 
-      <motion.div initial="hidden" animate="show" className="w-full max-w-sm mx-auto">
-        {/* Logo */}
-        <motion.div custom={0} variants={fade} className="text-center mb-10">
-          <button onClick={handleLogoClick} className="inline-flex items-center gap-3 mb-5 bg-transparent border-none cursor-pointer">
-            <div className="w-11 h-11 rounded-lg surface-raised flex items-center justify-center">
-              <IconPlay size={20} className="text-[var(--color-text-2)]" />
-            </div>
-            <div className="text-left">
-              <h1 className="text-2xl font-semibold tracking-tight text-[var(--color-text-0)]">
-                SyncWatch
+      {/* ── Nav ── */}
+      <nav className="px-6 py-5 flex items-center justify-between">
+        <button onClick={handleLogoClick} className="flex items-center gap-2.5 bg-transparent border-none cursor-pointer">
+          <div className="w-8 h-8 rounded-lg surface-raised flex items-center justify-center">
+            <IconPlay size={14} className="text-[var(--color-text-2)]" />
+          </div>
+          <span className="text-sm font-semibold text-[var(--color-text-0)] tracking-tight">SyncWatch</span>
+        </button>
+        {user && (
+          <div className="flex items-center gap-3">
+            <span className="text-xs text-[var(--color-text-3)]">{user.username}</span>
+            <button onClick={logout} className="text-[11px] text-[var(--color-text-4)] hover:text-[var(--color-error)] transition-colors">
+              выйти
+            </button>
+          </div>
+        )}
+      </nav>
+
+      {/* ── Hero ── */}
+      {!user ? (
+        <main className="flex-1 flex flex-col items-center justify-center px-5 pb-16">
+          <motion.div
+            initial={{ opacity: 0, y: 24 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
+            className="w-full max-w-[360px]"
+          >
+            {/* Headline */}
+            <div className="text-center mb-10">
+              <h1 className="text-[2.2rem] font-semibold tracking-tight text-[var(--color-text-0)] leading-[1.15] mb-3">
+                Смотрите вместе,<br />
+                <span style={{ color: 'var(--color-text-3)' }}>где бы вы ни были</span>
               </h1>
-              <p className="text-[10px] text-[var(--color-text-4)] tracking-[0.15em] uppercase font-mono">watch together</p>
+              <p className="text-sm text-[var(--color-text-4)] leading-relaxed">
+                Приватное пространство для двоих — синхронный просмотр, чат и голос.
+              </p>
             </div>
-          </button>
-          <p className="text-[var(--color-text-2)] text-sm leading-relaxed max-w-xs mx-auto">
-            A private space for watching videos in sync with live chat and voice.
-          </p>
-        </motion.div>
 
-        {/* Feature grid */}
-        <motion.div custom={1} variants={fade} className="grid grid-cols-3 gap-2 mb-8">
-          {[
-            { icon: <IconFilm size={15} />, label: 'Any source' },
-            { icon: <IconZap size={15} />, label: 'Live sync' },
-            { icon: <IconRadio size={15} />, label: 'HLS' },
-            { icon: <IconMic size={15} />, label: 'Voice' },
-            { icon: <IconChat size={15} />, label: 'Chat' },
-            { icon: <IconHeart size={15} />, label: 'Reactions' },
-          ].map((f) => (
-            <div key={f.label} className="surface-raised rounded-lg px-3 py-2.5 flex items-center gap-2">
-              <span className="text-[var(--color-text-3)]">{f.icon}</span>
-              <span className="text-xs text-[var(--color-text-2)]">{f.label}</span>
+            {/* Auth card */}
+            <div className="surface rounded-2xl p-6">
+              <p className="text-xs text-[var(--color-text-4)] mb-4">Войдите или создайте аккаунт</p>
+              <form onSubmit={handleAuth} className="space-y-3">
+                <input
+                  type="text" value={username} onChange={e => setUsername(e.target.value)}
+                  placeholder="Имя пользователя" className="input-field" required minLength={2} maxLength={50}
+                  autoComplete="username" id="auth-username"
+                />
+                <input
+                  type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="Пароль (мин. 4 символа)" className="input-field" required minLength={4}
+                  autoComplete="current-password" id="auth-password"
+                />
+                {authError && <p className="text-[var(--color-error)] text-xs">{authError}</p>}
+                <button type="submit" disabled={isSubmitting || !username.trim() || !password.trim()}
+                  className="btn-primary w-full flex items-center justify-center gap-2" id="auth-submit">
+                  {isSubmitting
+                    ? <span className="spinner" style={{ width: 14, height: 14 }} />
+                    : <><span>Войти</span><IconArrowRight size={14} /></>}
+                </button>
+              </form>
             </div>
-          ))}
-        </motion.div>
 
-        {/* Auth or Rooms */}
-        {!user ? (
-          <motion.div custom={2} variants={fade} className="surface rounded-xl p-6">
-            <h2 className="text-sm font-semibold text-[var(--color-text-0)] mb-1">Sign in</h2>
-            <p className="text-xs text-[var(--color-text-3)] mb-5">Enter your credentials or create a new account.</p>
-
-            <form onSubmit={handleAuth} className="space-y-3">
-              <div>
-                <label className="label">Username</label>
-                <input type="text" value={username} onChange={(e) => setUsername(e.target.value)}
-                  placeholder="your name" className="input-field" required minLength={2} maxLength={50}
-                  autoComplete="username" id="auth-username" />
-              </div>
-              <div>
-                <label className="label">Password</label>
-                <input type="password" value={password} onChange={(e) => setPassword(e.target.value)}
-                  placeholder="min 4 characters" className="input-field" required minLength={4}
-                  autoComplete="current-password" id="auth-password" />
-              </div>
-
-              {authError && (
-                <p className="text-[var(--color-error)] text-xs">{authError}</p>
-              )}
-
-              <button type="submit" disabled={isSubmitting || !username.trim() || !password.trim()}
-                className="btn-primary w-full flex items-center justify-center gap-2" id="auth-submit">
-                {isSubmitting ? <span className="spinner" /> : <>Enter <IconArrowRight size={14} /></>}
-              </button>
-            </form>
+            <p className="text-center text-[10px] text-[var(--color-text-4)] mt-6 tracking-widest uppercase">
+              сделано для нас двоих
+            </p>
           </motion.div>
-        ) : (
-          <motion.div custom={2} variants={fade} className="space-y-3">
-            {/* Status bar */}
-            <div className="surface rounded-xl px-4 py-3 flex items-center justify-between">
-              <div className="flex items-center gap-2">
-                <div className="status-dot live" />
-                <span className="text-sm text-[var(--color-text-2)]">{user.username}</span>
+        </main>
+      ) : (
+        <main className="flex-1 flex flex-col px-5 pb-16 pt-4">
+          <div className="max-w-[420px] mx-auto w-full space-y-3">
+
+            {/* Welcome */}
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
+              className="surface rounded-2xl px-5 py-4">
+              <div className="flex items-center gap-3">
+                <div className="w-9 h-9 rounded-xl surface-raised flex items-center justify-center text-sm font-bold text-[var(--color-text-2)]">
+                  {user.username[0].toUpperCase()}
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-[var(--color-text-0)]">{user.username}</p>
+                  <div className="flex items-center gap-1.5">
+                    <div className="status-dot live" />
+                    <p className="text-[11px] text-[var(--color-text-4)]">онлайн</p>
+                  </div>
+                </div>
               </div>
-              <button onClick={logout} className="text-xs text-[var(--color-text-4)] hover:text-[var(--color-error)] transition-colors">
-                Sign out
-              </button>
-            </div>
+            </motion.div>
 
             {/* Tabs */}
-            <div className="surface rounded-xl overflow-hidden">
-              <div className="flex border-b border-[var(--color-border)]">
-                {(['create', 'join'] as const).map((t) => (
-                  <button key={t} onClick={() => setTab(t)}
-                    className={`flex-1 py-3 text-xs font-medium tracking-wide uppercase transition-colors relative ${
+            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.4 }}
+              className="surface rounded-2xl overflow-hidden">
+              {/* Tab headers */}
+              <div className="grid grid-cols-2 border-b border-[var(--color-border)]">
+                {(['create', 'join'] as const).map(t => (
+                  <button key={t} onClick={() => setTab(t)} id={`tab-${t}`}
+                    className={`py-3.5 text-xs font-medium tracking-wide transition-colors relative ${
                       tab === t ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'
-                    }`} id={`tab-${t}`}>
-                    {t === 'create' ? 'Create room' : 'Join room'}
+                    }`}>
+                    {t === 'create' ? 'Создать комнату' : 'Войти в комнату'}
                     {tab === t && (
-                      <motion.div layoutId="tab-line"
-                        className="absolute bottom-0 left-0 right-0 h-px bg-[var(--color-text-0)]" />
+                      <motion.div layoutId="tab-line" className="absolute bottom-0 left-4 right-4 h-[1.5px] bg-[var(--color-text-0)]" />
                     )}
                   </button>
                 ))}
@@ -196,100 +199,129 @@ export default function HomePage() {
               <div className="p-5">
                 <AnimatePresence mode="wait">
                   {tab === 'create' ? (
-                    <motion.form key="c" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    <motion.form key="c" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.2 }}
                       onSubmit={handleCreate} className="space-y-3">
                       <div>
-                        <label className="label">Room name</label>
-                        <input type="text" value={roomName} onChange={(e) => setRoomName(e.target.value)}
-                          placeholder="movie night" className="input-field" required maxLength={100} id="room-name-input" />
+                        <label className="label">Название</label>
+                        <input type="text" value={roomName} onChange={e => setRoomName(e.target.value)}
+                          placeholder="movie night ✨" className="input-field" required maxLength={100} id="room-name-input" />
                       </div>
                       <button type="submit" disabled={isCreating || !roomName.trim()}
                         className="btn-primary w-full flex items-center justify-center gap-2" id="create-room-btn">
-                        {isCreating ? <span className="spinner" /> : <><IconPlus size={14} /> Create</>}
+                        {isCreating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <><IconPlus size={14} /><span>Создать</span></>}
                       </button>
                     </motion.form>
                   ) : (
-                    <motion.form key="j" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                    <motion.form key="j" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
+                      exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }}
                       onSubmit={handleJoin} className="space-y-3">
                       <div>
-                        <label className="label">Room code</label>
-                        <input type="text" value={joinCode} onChange={(e) => setJoinCode(e.target.value)}
-                          placeholder="paste code" className="input-field font-mono" required id="join-code-input" />
+                        <label className="label">Код комнаты</label>
+                        <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)}
+                          placeholder="вставьте код" className="input-field font-mono" required id="join-code-input" />
                       </div>
                       <button type="submit" disabled={!joinCode.trim()}
                         className="btn-primary w-full flex items-center justify-center gap-2" id="join-room-btn">
-                        <IconArrowRight size={14} /> Join
+                        <IconArrowRight size={14} /><span>Войти</span>
                       </button>
                     </motion.form>
                   )}
                 </AnimatePresence>
               </div>
-            </div>
-          </motion.div>
-        )}
+            </motion.div>
 
-        <motion.p custom={3} variants={fade} className="text-center mt-8 text-[10px] text-[var(--color-text-4)] tracking-wider uppercase">
-          Made for us
-        </motion.p>
-      </motion.div>
-    </main>
+            {/* Features */}
+            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.12, duration: 0.4 }}
+              className="grid grid-cols-3 gap-2">
+              {[
+                { label: 'Любой источник', sub: 'YouTube, HLS, MP4' },
+                { label: 'Живая синхронизация', sub: 'sub-секундная' },
+                { label: 'Голос + чат', sub: 'WebRTC' },
+              ].map(f => (
+                <div key={f.label} className="surface-raised rounded-xl p-3">
+                  <p className="text-[11px] font-medium text-[var(--color-text-2)] leading-tight mb-0.5">{f.label}</p>
+                  <p className="text-[10px] text-[var(--color-text-4)]">{f.sub}</p>
+                </div>
+              ))}
+            </motion.div>
+
+            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
+              className="text-center text-[10px] text-[var(--color-text-4)] tracking-widest uppercase pt-2">
+              сделано для нас двоих
+            </motion.p>
+          </div>
+        </main>
+      )}
+    </div>
   );
 }
 
 function EasterEgg() {
-  const hearts = Array.from({ length: 24 });
+  const count = 22;
   return (
     <motion.div
       initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      className="heart-rain"
+      style={{
+        position: 'fixed', inset: 0, zIndex: 9999,
+        pointerEvents: 'none', overflow: 'hidden',
+      }}
     >
       {/* Falling hearts */}
-      {hearts.map((_, i) => (
+      {Array.from({ length: count }).map((_, i) => (
         <motion.div key={i}
-          initial={{ left: `${(i / hearts.length) * 100 + (Math.random() * 8 - 4)}%`, top: '-40px', opacity: 0 }}
-          animate={{ top: '110vh', opacity: [0, 1, 1, 0] }}
-          transition={{ duration: 3.5 + Math.random() * 2.5, delay: i * 0.1, ease: 'easeOut' }}
-          style={{ position: 'absolute' }}
-        >
-          <IconHeart size={14 + Math.floor(Math.random() * 16)} className="text-[var(--color-accent)]" />
+          initial={{ x: `${(i / count) * 100}vw`, y: -40, opacity: 0 }}
+          animate={{ y: '110vh', opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 3.5 + Math.random() * 2, delay: i * 0.1, ease: 'easeIn' }}
+          style={{ position: 'absolute', top: 0, left: 0 }}>
+          <span style={{ opacity: 0.6 + Math.random() * 0.4 }}>
+            <IconHeart
+              size={12 + Math.floor(Math.random() * 16)}
+              className="text-[var(--color-accent)]"
+            />
+          </span>
         </motion.div>
       ))}
 
-      {/* Center message */}
+      {/* Card — perfectly centered */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.85, y: 20 }}
+        initial={{ opacity: 0, scale: 0.88, y: 16 }}
         animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9 }}
-        transition={{ delay: 0.3, duration: 0.7, ease: [0.25, 1, 0.5, 1] as const }}
+        exit={{ opacity: 0, scale: 0.92 }}
+        transition={{ delay: 0.25, duration: 0.55, ease: [0.25, 1, 0.5, 1] as const }}
         style={{
           position: 'fixed',
-          top: '50%',
-          left: '50%',
+          top: '50%', left: '50%',
           transform: 'translate(-50%, -50%)',
-          textAlign: 'center',
-          pointerEvents: 'none',
+          width: 'min(340px, 88vw)',
           zIndex: 10000,
-          width: '90vw',
-          maxWidth: '400px',
+          pointerEvents: 'none',
         }}
       >
-        <div className="surface rounded-2xl px-8 py-7" style={{ border: '1px solid var(--color-border-active, #52525B)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
-          <p className="text-xs text-[var(--color-text-4)] uppercase tracking-[0.2em] mb-3">для тебя</p>
-          <p className="text-3xl font-semibold text-[var(--color-text-0)] tracking-tight mb-1">
+        <div
+          className="surface rounded-2xl text-center"
+          style={{
+            padding: '28px 24px 24px',
+            border: '1px solid rgba(167,139,250,0.25)',
+            boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.3)',
+          }}
+        >
+          <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-4)] mb-4">жаным</p>
+          <p className="text-[2rem] font-semibold tracking-tight text-[var(--color-text-0)] mb-1">
             Дильназ
           </p>
-          <p className="text-base text-[var(--color-text-2)] mb-4">
-            Ты — мой мир
+          <p className="text-sm text-[var(--color-text-2)] leading-relaxed mb-5">
+            Ты — мой мир.<br />
+            <span className="text-[var(--color-text-4)]">Смотреть с тобой — лучшее.</span>
           </p>
-          <div className="flex justify-center gap-2">
-            {['❤️', '🌸', '❤️'].map((e, i) => (
-              <span key={i} className="text-lg">{e}</span>
-            ))}
+          <div className="flex justify-center gap-3">
+            <IconHeart size={16} className="text-[var(--color-accent)]" />
+            <IconHeart size={20} className="text-[var(--color-accent)]" />
+            <IconHeart size={16} className="text-[var(--color-accent)]" />
           </div>
-          <p className="text-[11px] text-[var(--color-text-4)] mt-4 tracking-wider">forever yours</p>
+          <p className="text-[10px] text-[var(--color-text-4)] mt-4 tracking-widest">forever yours</p>
         </div>
       </motion.div>
     </motion.div>
   );
 }
-

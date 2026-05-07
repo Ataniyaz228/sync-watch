@@ -7,6 +7,7 @@ import { setupSocketIO } from './socket/index.js';
 import health from './routes/health.js';
 import rooms from './routes/rooms.js';
 import videos from './routes/videos.js';
+import gifs from './routes/gifs.js';
 
 const PORT = parseInt(process.env.PORT || process.env.SERVER_PORT || '3001', 10);
 const CLIENT_URL = process.env.CLIENT_URL || 'http://localhost:3000';
@@ -32,6 +33,7 @@ app.use('*', logger());
 app.route('/api/health', health);
 app.route('/api/rooms', rooms);
 app.route('/api/videos', videos);
+app.route('/api/gifs', gifs);
 
 // Root
 app.get('/', (c) => {

@@ -237,29 +237,59 @@ export default function HomePage() {
 }
 
 function EasterEgg() {
-  const hearts = Array.from({ length: 20 });
+  const hearts = Array.from({ length: 24 });
   return (
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} className="heart-rain">
+    <motion.div
+      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+      className="heart-rain"
+    >
+      {/* Falling hearts */}
       {hearts.map((_, i) => (
         <motion.div key={i}
-          initial={{ left: `${Math.random() * 100}%`, top: '-5%', opacity: 0 }}
-          animate={{ top: '105%', opacity: [0, 0.7, 0.7, 0] }}
-          transition={{ duration: 3 + Math.random() * 2, delay: i * 0.12, ease: 'easeOut' }}
-          style={{ position: 'absolute' }}>
-          <IconHeart size={16 + Math.random() * 14} className="text-[var(--color-accent)]" />
+          initial={{ left: `${(i / hearts.length) * 100 + (Math.random() * 8 - 4)}%`, top: '-40px', opacity: 0 }}
+          animate={{ top: '110vh', opacity: [0, 1, 1, 0] }}
+          transition={{ duration: 3.5 + Math.random() * 2.5, delay: i * 0.1, ease: 'easeOut' }}
+          style={{ position: 'absolute' }}
+        >
+          <IconHeart size={14 + Math.floor(Math.random() * 16)} className="text-[var(--color-accent)]" />
         </motion.div>
       ))}
+
+      {/* Center message */}
       <motion.div
-        initial={{ opacity: 0, scale: 0.9 }}
-        animate={{ opacity: 1, scale: 1 }}
-        exit={{ opacity: 0 }}
-        transition={{ delay: 0.4, duration: 0.6, ease: [0.25, 1, 0.5, 1] as const }}
-        className="ee-center">
-        <p className="text-3xl sm:text-4xl font-semibold text-[var(--color-text-0)] tracking-tight mb-1">
-          Ты — мой мир
-        </p>
-        <p className="text-sm text-[var(--color-accent)]">forever yours</p>
+        initial={{ opacity: 0, scale: 0.85, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9 }}
+        transition={{ delay: 0.3, duration: 0.7, ease: [0.25, 1, 0.5, 1] as const }}
+        style={{
+          position: 'fixed',
+          top: '50%',
+          left: '50%',
+          transform: 'translate(-50%, -50%)',
+          textAlign: 'center',
+          pointerEvents: 'none',
+          zIndex: 10000,
+          width: '90vw',
+          maxWidth: '400px',
+        }}
+      >
+        <div className="surface rounded-2xl px-8 py-7" style={{ border: '1px solid var(--color-border-active, #52525B)', boxShadow: '0 24px 64px rgba(0,0,0,0.6)' }}>
+          <p className="text-xs text-[var(--color-text-4)] uppercase tracking-[0.2em] mb-3">для тебя</p>
+          <p className="text-3xl font-semibold text-[var(--color-text-0)] tracking-tight mb-1">
+            Дильназ
+          </p>
+          <p className="text-base text-[var(--color-text-2)] mb-4">
+            Ты — мой мир
+          </p>
+          <div className="flex justify-center gap-2">
+            {['❤️', '🌸', '❤️'].map((e, i) => (
+              <span key={i} className="text-lg">{e}</span>
+            ))}
+          </div>
+          <p className="text-[11px] text-[var(--color-text-4)] mt-4 tracking-wider">forever yours</p>
+        </div>
       </motion.div>
     </motion.div>
   );
 }
+

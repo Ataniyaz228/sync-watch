@@ -20,6 +20,16 @@ export interface Room {
   updatedAt: string;
 }
 
+export interface WatchHistoryItem {
+  id: string;
+  url: string;
+  resolvedUrl: string;
+  videoType: string;
+  title?: string;
+  createdAt: string;
+  addedBy: string;
+}
+
 export interface ChatReaction {
   emoji: string;
   userId: string;
@@ -66,6 +76,8 @@ export interface ServerToClientEvents {
   'chat:message': (data: ChatMessage) => void;
   'chat:history': (data: ChatMessage[]) => void;
   'chat:reaction': (data: { messageId: string; reaction: ChatReaction; action: 'add' | 'remove' }) => void;
+  'video:pause-request': (data: { username: string; currentTime: number }) => void;
+  'video:pause-request-rejected': () => void;
   'voice:offer': (data: { sdp: string; from: string }) => void;
   'voice:answer': (data: { sdp: string; from: string }) => void;
   'voice:ice-candidate': (data: { candidate: string; from: string }) => void;
@@ -83,6 +95,9 @@ export interface ClientToServerEvents {
   'video:sync-request': (data: { roomSlug: string }) => void;
   'chat:message': (data: { roomSlug: string; content: string }) => void;
   'chat:reaction': (data: { roomSlug: string; messageId: string; emoji: string }) => void;
+  'video:pause-request': (data: { roomSlug: string; currentTime: number }) => void;
+  'video:pause-request-accept': (data: { roomSlug: string }) => void;
+  'video:pause-request-reject': (data: { roomSlug: string }) => void;
   'voice:offer': (data: { roomSlug: string; sdp: string; targetUserId: string }) => void;
   'voice:answer': (data: { roomSlug: string; sdp: string; targetUserId: string }) => void;
   'voice:ice-candidate': (data: { roomSlug: string; candidate: string; targetUserId: string }) => void;

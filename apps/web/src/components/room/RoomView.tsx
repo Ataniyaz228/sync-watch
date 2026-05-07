@@ -1,7 +1,8 @@
 'use client';
 
 import { useState, useRef, useCallback, useEffect } from 'react';
-import { motion } from 'framer-motion';
+import { useRouter } from 'next/navigation';
+import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '@/hooks/useSocket';
 import { useChat } from '@/hooks/useChat';
 import { useVideoSync, type VideoPlayerAPI } from '@/hooks/useVideoSync';
@@ -10,16 +11,20 @@ import VideoPlayer from './VideoPlayer';
 import UrlInput from './UrlInput';
 import Chat from './Chat';
 import type { VideoResolution, VideoType, RoomState } from '@/types';
-import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume } from '@/components/ui/Icons';
+import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume, IconHistory } from '@/components/ui/Icons';
 
 interface RoomViewProps {
   roomSlug: string;
   roomName: string;
   userId: string;
   username: string;
+  createdBy: string; // userId of room creator
 }
 
-export default function RoomView({ roomSlug, roomName, userId, username }: RoomViewProps) {
+export default function RoomView({ roomSlug, roomName, userId, username, createdBy }: RoomViewProps) {
+  const isHost = userId === createdBy;
+  const router = useRouter();
+
   const [videoType, setVideoType] = useState<VideoType | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
@@ -32,9 +37,9 @@ export default function RoomView({ roomSlug, roomName, userId, username }: RoomV
   const { emit, on } = useSocket(roomSlug, username, userId);
   const getPlayer = useCallback(() => playerRef.current, []);
 
-  const { onLocalPlay, onLocalPause, onLocalSeek } = useVideoSync({
+  const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest } = useVideoSync({
     on, emit: emit as (event: string, data: unknown) => void,
-    roomSlug, getPlayer,
+    roomSlug, getPlayer, isHost,
   });
 
   const { messages, sendMessage, reactToMessage, messagesEndRef } = useChat({
@@ -78,6 +83,36 @@ export default function RoomView({ roomSlug, roomName, userId, username }: RoomV
     <div className="room-grid">
       <div className="bg-noise" />
 
+      {/* Pause Request Toast — shown to host */}
+      <AnimatePresence>
+        {pauseRequest && isHost && (
+          <motion.div
+            initial={{ opacity: 0, y: -16, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -16, scale: 0.95 }}
+            transition={{ duration: 0.2 }}
+            className="fixed top-4 left-1/2 z-50 surface rounded-xl px-4 py-3 shadow-xl border border-[var(--color-border)]"
+            style={{ transform: 'translateX(-50%)', minWidth: 280, maxWidth: '90vw' }}
+          >
+            <p className="text-xs text-[var(--color-text-3)] mb-2">
+              <span className="text-[var(--color-text-0)] font-medium">{pauseRequest.username}</span>
+              {' '}хочет поставить на паузу
+            </p>
+            <div className="flex gap-2">
+              <button onClick={acceptPauseRequest}
+                className="flex-1 text-xs py-1.5 px-3 rounded-md font-medium transition-colors"
+                style={{ background: 'var(--color-accent)', color: '#fff' }}>
+                Принять
+              </button>
+              <button onClick={rejectPauseRequest}
+                className="flex-1 text-xs py-1.5 px-3 rounded-md surface-raised text-[var(--color-text-2)] transition-colors hover:text-[var(--color-error)]">
+                Отклонить
+              </button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ═══ Header ═══ */}
       <header className="room-header border-b border-[var(--color-border)] bg-[var(--color-bg-1)] px-4 py-2.5 flex items-center justify-between gap-3 z-10">
         <div className="flex items-center gap-3 min-w-0">
@@ -91,6 +126,14 @@ export default function RoomView({ roomSlug, roomName, userId, username }: RoomV
             <h1 className="text-sm font-semibold text-[var(--color-text-0)] truncate">{roomName}</h1>
             <p className="text-[10px] text-[var(--color-text-4)] font-mono truncate">{roomSlug}</p>
           </div>
+          {/* Role badge */}
+          <span className={`hidden sm:inline-flex text-[10px] px-2 py-0.5 rounded font-medium uppercase tracking-wider flex-shrink-0 ${
+            isHost
+              ? 'bg-[var(--color-accent-dim)] text-[var(--color-accent)] border border-[var(--color-accent-muted)]'
+              : 'bg-[var(--color-bg-3)] text-[var(--color-text-4)] border border-[var(--color-border)]'
+          }`}>
+            {isHost ? 'Host' : 'Viewer'}
+          </span>
         </div>
 
         <div className="flex items-center gap-1.5">
@@ -104,18 +147,16 @@ export default function RoomView({ roomSlug, roomName, userId, username }: RoomV
           {/* Voice call */}
           {isInCall ? (
             <div className="flex items-center gap-1">
-              <button onClick={toggleMute} className={`btn-icon ${isMuted ? '' : 'active'}`}
-                title={isMuted ? 'Unmute' : 'Mute'}>
+              <button onClick={toggleMute} className={`btn-icon ${isMuted ? '' : 'active'}`} title={isMuted ? 'Unmute' : 'Mute'}>
                 {isMuted ? <IconX size={14} /> : <IconMic size={14} />}
               </button>
               {peerConnected && (
-                <div className="flex items-center gap-1 px-2 py-1.5 rounded-md text-[var(--color-success)]">
+                <div className="flex items-center gap-1 px-2 py-1.5 text-[var(--color-success)]">
                   <IconVolume size={12} />
                   <span className="text-[10px]">Live</span>
                 </div>
               )}
-              <button onClick={leaveCall} className="btn-icon" style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
-                title="End call">
+              <button onClick={leaveCall} className="btn-icon" style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }} title="End call">
                 <IconX size={14} />
               </button>
             </div>
@@ -124,6 +165,11 @@ export default function RoomView({ roomSlug, roomName, userId, username }: RoomV
               <IconMic size={14} />
             </button>
           )}
+
+          {/* History */}
+          <button onClick={() => router.push(`/room/${roomSlug}/history`)} className="btn-icon" title="Watch history">
+            <IconHistory size={14} />
+          </button>
 
           {/* Copy link */}
           <button onClick={copyLink} className="btn-icon" title="Copy link" id="copy-link-btn">
@@ -149,15 +195,27 @@ export default function RoomView({ roomSlug, roomName, userId, username }: RoomV
             onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek} playerRef={playerRef} />
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05 }}
-          className="surface rounded-xl p-3 flex-shrink-0">
-          <UrlInput onVideoResolved={handleVideoResolved} />
-        </motion.div>
+        {/* URL Input — only host sees it */}
+        {isHost && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05 }}
+            className="surface rounded-xl p-3 flex-shrink-0">
+            <UrlInput onVideoResolved={handleVideoResolved} />
+          </motion.div>
+        )}
+
+        {/* Viewer hint */}
+        {!isHost && (
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.1 }}
+            className="flex items-center gap-2 px-3 py-2 surface-raised rounded-lg flex-shrink-0">
+            <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-text-4)]" />
+            <p className="text-[11px] text-[var(--color-text-4)]">Host controls playback — your play/pause won't affect others</p>
+          </motion.div>
+        )}
 
         {/* Viewers — desktop */}
         {users.length > 0 && (
           <div className="hidden lg:flex items-center gap-1.5 px-1 flex-shrink-0">
-            <span className="text-[10px] text-[var(--color-text-4)] uppercase tracking-wider mr-1">Viewers</span>
+            <span className="text-[10px] text-[var(--color-text-4)] uppercase tracking-wider mr-1">In room</span>
             {users.map((u, i) => (
               <span key={u + i} className="text-[11px] text-[var(--color-text-3)] px-2 py-0.5 rounded-md surface-raised">{u}</span>
             ))}

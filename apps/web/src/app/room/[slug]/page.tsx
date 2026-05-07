@@ -11,6 +11,7 @@ interface RoomData {
   id: string;
   slug: string;
   name: string;
+  createdBy: string;
 }
 
 export default function RoomPage() {
@@ -98,6 +99,7 @@ export default function RoomPage() {
       roomName={room.name}
       userId={user.id}
       username={user.username}
+      createdBy={room.createdBy}
     />
   );
 }

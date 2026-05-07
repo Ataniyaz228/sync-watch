@@ -67,6 +67,58 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     handleLeave(io, socket, roomSlug);
   });
 
+  // Viewer requests pause → notify host
+  socket.on('video:pause-request', async (data) => {
+    const { roomSlug, currentTime } = data;
+    const username = (socket.data as { username?: string }).username || 'Someone';
+
+    // Find host socket (first user in room by socket data, room creator)
+    const roomSockets = io.sockets.adapter.rooms.get(roomSlug);
+    if (!roomSockets) return;
+
+    // Get room from DB to find createdBy
+    const db = getDb();
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        if (room.length > 0) {
+          const hostUserId = room[0].createdBy;
+          for (const sid of roomSockets) {
+            const s = io.sockets.sockets.get(sid);
+            if (s && (s.data as { userId?: string }).userId === hostUserId) {
+              s.emit('video:pause-request', { username, currentTime });
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Room] pause-request DB error:', err);
+      }
+    }
+  });
+
+  // Host accepts pause request → pause room
+  socket.on('video:pause-request-accept', async (data) => {
+    const { roomSlug } = data;
+    const userId = (socket.data as { userId?: string }).userId || 'unknown';
+    const state = await getRoomState(roomSlug);
+    const currentTime = state?.currentTime ?? 0;
+
+    io.to(roomSlug).emit('video:pause', { currentTime, userId });
+    await setRoomState(roomSlug, {
+      ...state,
+      isPlaying: false,
+      currentTime,
+      updatedAt: Date.now(),
+    });
+  });
+
+  // Host rejects pause request → notify viewers
+  socket.on('video:pause-request-reject', (data) => {
+    const { roomSlug } = data;
+    socket.to(roomSlug).emit('video:pause-request-rejected');
+  });
+
   // Video sync events
   socket.on('video:play', async (data) => {
     const { roomSlug, currentTime } = data;

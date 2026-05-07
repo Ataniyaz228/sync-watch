@@ -28,6 +28,15 @@ export interface Room {
   updatedAt: string;
 }
 
+export interface WatchHistoryItem {
+  id: string;
+  url: string;
+  resolvedUrl: string;
+  videoType: string;
+  title?: string;
+  addedAt: string;
+}
+
 export type MessageType = 'text' | 'system';
 
 export interface ChatReaction {
@@ -72,6 +81,9 @@ export interface ServerToClientEvents {
   'chat:message': (data: ChatMessage) => void;
   'chat:history': (data: ChatMessage[]) => void;
   'chat:reaction': (data: { messageId: string; reaction: ChatReaction; action: 'add' | 'remove' }) => void;
+  // Pause request from viewer
+  'video:pause-request': (data: { username: string; currentTime: number }) => void;
+  'video:pause-request-rejected': () => void;
   // WebRTC signaling
   'voice:offer': (data: { sdp: string; from: string }) => void;
   'voice:answer': (data: { sdp: string; from: string }) => void;
@@ -90,6 +102,10 @@ export interface ClientToServerEvents {
   'video:sync-request': (data: { roomSlug: string }) => void;
   'chat:message': (data: { roomSlug: string; content: string }) => void;
   'chat:reaction': (data: { roomSlug: string; messageId: string; emoji: string }) => void;
+  // Pause request
+  'video:pause-request': (data: { roomSlug: string; currentTime: number }) => void;
+  'video:pause-request-accept': (data: { roomSlug: string }) => void;
+  'video:pause-request-reject': (data: { roomSlug: string }) => void;
   // WebRTC signaling
   'voice:offer': (data: { roomSlug: string; sdp: string; targetUserId: string }) => void;
   'voice:answer': (data: { roomSlug: string; sdp: string; targetUserId: string }) => void;

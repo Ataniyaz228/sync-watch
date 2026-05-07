@@ -5,7 +5,7 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/utils';
-import { IconPlay, IconPlus, IconArrowRight, IconHeart } from '@/components/ui/Icons';
+import { IconPlay, IconPlus, IconArrowRight, IconHeart, IconHistory } from '@/components/ui/Icons';
 
 const SECRET = 'heart';
 
@@ -100,6 +100,11 @@ export default function HomePage() {
         </button>
         {user && (
           <div className="flex items-center gap-3">
+            <button onClick={() => router.push('/history')}
+              className="flex items-center gap-1.5 text-xs text-[var(--color-text-4)] hover:text-[var(--color-text-2)] transition-colors">
+              <IconHistory size={13} />
+              <span className="hidden sm:inline">История</span>
+            </button>
             <span className="text-xs text-[var(--color-text-3)]">{user.username}</span>
             <button onClick={logout} className="text-[11px] text-[var(--color-text-4)] hover:text-[var(--color-error)] transition-colors">
               выйти

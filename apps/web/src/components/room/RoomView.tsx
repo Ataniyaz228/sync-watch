@@ -7,6 +7,7 @@ import { useSocket } from '@/hooks/useSocket';
 import { useChat } from '@/hooks/useChat';
 import { useVideoSync, type VideoPlayerAPI } from '@/hooks/useVideoSync';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
+import { useWatchProgress } from '@/hooks/useWatchProgress';
 import VideoPlayer from './VideoPlayer';
 import UrlInput from './UrlInput';
 import Chat from './Chat';
@@ -48,6 +49,14 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
   const { isInCall, isMuted, peerConnected, joinCall, leaveCall, toggleMute } = useVoiceCall({
     on, emit: emit as (event: string, data: unknown) => void, roomSlug, userId,
+  });
+
+  useWatchProgress({
+    roomSlug,
+    videoUrl: videoUrl || null,
+    getPlayer,
+    isHost,
+    enabled: !!videoUrl,
   });
 
   useEffect(() => {

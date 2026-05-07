@@ -163,21 +163,14 @@ rooms.get('/:slug/messages', async (c) => {
   return c.json([]);
 });
 
-// Get watch history
+// Get watch history for a room
 rooms.get('/:slug/history', async (c) => {
   const slug = c.req.param('slug');
   const db = getDb();
 
   if (db) {
-    const room = await db
-      .select()
-      .from(schema.rooms)
-      .where(eq(schema.rooms.slug, slug))
-      .limit(1);
-
-    if (room.length === 0) {
-      return c.json([]);
-    }
+    const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, slug)).limit(1);
+    if (room.length === 0) return c.json([]);
 
     const history = await db
       .select()
@@ -188,8 +181,88 @@ rooms.get('/:slug/history', async (c) => {
 
     return c.json(history);
   }
-
   return c.json([]);
+});
+
+// Get watch history for a user (across all rooms)
+rooms.get('/user/:userId/history', async (c) => {
+  const userId = c.req.param('userId');
+  const db = getDb();
+
+  if (db) {
+    const history = await db
+      .select({
+        id: schema.watchHistory.id,
+        url: schema.watchHistory.url,
+        resolvedUrl: schema.watchHistory.resolvedUrl,
+        videoType: schema.watchHistory.videoType,
+        title: schema.watchHistory.title,
+        createdAt: schema.watchHistory.createdAt,
+        roomSlug: schema.rooms.slug,
+        roomName: schema.rooms.name,
+      })
+      .from(schema.watchHistory)
+      .leftJoin(schema.rooms, eq(schema.watchHistory.roomId, schema.rooms.id))
+      .where(eq(schema.watchHistory.addedBy, userId))
+      .orderBy(schema.watchHistory.createdAt)
+      .limit(100);
+
+    return c.json(history);
+  }
+  return c.json([]);
+});
+
+// Get watch progress for a room + url
+rooms.get('/:slug/progress', async (c) => {
+  const slug = c.req.param('slug');
+  const url = c.req.query('url');
+  const db = getDb();
+
+  if (db && url) {
+    const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, slug)).limit(1);
+    if (room.length === 0) return c.json({ timestampS: 0 });
+
+    const progress = await db
+      .select()
+      .from(schema.watchProgress)
+      .where(eq(schema.watchProgress.roomId, room[0].id))
+      .orderBy(schema.watchProgress.updatedAt)
+      .limit(1);
+
+    return c.json(progress[0] ?? { timestampS: 0 });
+  }
+  return c.json({ timestampS: 0 });
+});
+
+// Save watch progress
+rooms.post('/:slug/progress', async (c) => {
+  const slug = c.req.param('slug');
+  const body = await c.req.json();
+  const { url, timestampS, isPlaying } = body;
+  const db = getDb();
+
+  if (db && url) {
+    const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, slug)).limit(1);
+    if (room.length > 0) {
+      // Upsert by roomId
+      const existing = await db
+        .select()
+        .from(schema.watchProgress)
+        .where(eq(schema.watchProgress.roomId, room[0].id))
+        .limit(1);
+
+      if (existing.length > 0) {
+        await db.update(schema.watchProgress)
+          .set({ url, timestampS, isPlaying: isPlaying ?? false, updatedAt: new Date() })
+          .where(eq(schema.watchProgress.id, existing[0].id));
+      } else {
+        await db.insert(schema.watchProgress).values({
+          roomId: room[0].id, url, timestampS, isPlaying: isPlaying ?? false,
+        });
+      }
+    }
+  }
+  return c.json({ ok: true });
 });
 
 export default rooms;

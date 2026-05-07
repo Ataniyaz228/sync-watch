@@ -46,6 +46,8 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
       userId: 'system',
       username: 'System',
       content: `${username} joined the room`,
+      type: 'system',
+      reactions: [],
       createdAt: new Date().toISOString(),
       isSystem: true,
     };
@@ -107,6 +109,7 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     await setRoomState(roomSlug, {
       ...state,
       currentTime,
+      isPlaying: state?.isPlaying ?? false,
       updatedAt: Date.now(),
     });
   });
@@ -201,6 +204,8 @@ function handleLeave(io: TypedIO, socket: TypedSocket, roomSlug: string) {
       userId: 'system',
       username: 'System',
       content: `${username} left the room`,
+      type: 'system',
+      reactions: [],
       createdAt: new Date().toISOString(),
       isSystem: true,
     };

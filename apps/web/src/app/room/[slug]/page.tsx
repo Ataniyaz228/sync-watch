@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { Suspense, useEffect, useState } from 'react';
 import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
@@ -14,15 +14,22 @@ interface RoomData {
   createdBy: string;
 }
 
-export default function RoomPage() {
+function RoomContent() {
   const params = useParams();
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { user, isLoading: authLoading } = useAuth();
 
   const slug = params.slug as string;
   const [room, setRoom] = useState<RoomData | null>(null);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+
+  // Read query params at top level (before any conditional returns)
+  const loadUrl = searchParams.get('loadUrl') || undefined;
+  const loadType = searchParams.get('loadType') || undefined;
+  const loadResolved = searchParams.get('loadResolved') || undefined;
+  const loadTitle = searchParams.get('loadTitle') || undefined;
 
   useEffect(() => {
     if (!slug) return;
@@ -93,12 +100,6 @@ export default function RoomPage() {
 
   if (!user || !room) return null;
 
-  const searchParams = useSearchParams();
-  const loadUrl = searchParams.get('loadUrl') || undefined;
-  const loadType = searchParams.get('loadType') || undefined;
-  const loadResolved = searchParams.get('loadResolved') || undefined;
-  const loadTitle = searchParams.get('loadTitle') || undefined;
-
   return (
     <RoomView
       roomSlug={room.slug}
@@ -111,5 +112,17 @@ export default function RoomPage() {
       initialResolvedUrl={loadResolved}
       initialVideoTitle={loadTitle}
     />
+  );
+}
+
+export default function RoomPage() {
+  return (
+    <Suspense fallback={
+      <div className="min-h-screen flex items-center justify-center">
+        <div className="spinner" style={{ width: 40, height: 40, borderWidth: 3 }} />
+      </div>
+    }>
+      <RoomContent />
+    </Suspense>
   );
 }

@@ -11,7 +11,7 @@ import { useWatchProgress } from '@/hooks/useWatchProgress';
 import VideoPlayer from './VideoPlayer';
 import UrlInput from './UrlInput';
 import Chat from './Chat';
-import type { VideoResolution, VideoType, RoomState } from '@/types';
+import type { VideoResolution, VideoType, RoomState, QueueItem, RequestAction } from '@/types';
 import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume, IconHistory, IconPlus, IconArrowRight } from '@/components/ui/Icons';
 
 interface RoomViewProps {
@@ -39,13 +39,16 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [copied, setCopied] = useState(false);
   const [chatOpen, setChatOpen] = useState(false);
   const [showUrlModal, setShowUrlModal] = useState(false);
+  const [urlModalMode, setUrlModalMode] = useState<'change' | 'queue'>('change');
   const [videoSuggestion, setVideoSuggestion] = useState<{ username: string; url: string; title?: string; type: string; resolvedUrl: string; originalUrl: string } | null>(null);
+  const [queue, setQueue] = useState<QueueItem[]>([]);
+  const [sidebarTab, setSidebarTab] = useState<'chat' | 'queue'>('chat');
 
   const playerRef = useRef<VideoPlayerAPI | null>(null);
   const { emit, on } = useSocket(roomSlug, username, userId);
   const getPlayer = useCallback(() => playerRef.current, []);
 
-  const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest } = useVideoSync({
+  const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest, videoRequest, acceptVideoRequest, rejectVideoRequest } = useVideoSync({
     on, emit: emit as (event: string, data: unknown) => void,
     roomSlug, getPlayer, isHost,
   });
@@ -102,8 +105,24 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     }
   }, [initialVideoUrl, initialVideoType, initialResolvedUrl, initialVideoTitle, isHost, emit, roomSlug]);
 
+  // ─── Queue callbacks (declared before handleVideoResolved) ───
+  const addToQueue = useCallback((r: VideoResolution) => {
+    emit('queue:add', { roomSlug, ...r });
+  }, [emit, roomSlug]);
+
+  const removeFromQueue = useCallback((id: string) => {
+    emit('queue:remove', { roomSlug, id });
+  }, [emit, roomSlug]);
+
+  const playNext = useCallback(() => {
+    emit('queue:play-next', { roomSlug });
+  }, [emit, roomSlug]);
+
   const handleVideoResolved = useCallback((r: VideoResolution) => {
-    if (isHost) {
+    if (urlModalMode === 'queue') {
+      // Add to queue
+      addToQueue(r);
+    } else if (isHost) {
       // Host changes video directly
       setVideoType(r.type); setVideoUrl(r.resolvedUrl); setVideoTitle(r.title || '');
       emit('video:url-change', { roomSlug, ...r });
@@ -112,7 +131,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       emit('video:url-suggest', { roomSlug, ...r });
     }
     setShowUrlModal(false);
-  }, [emit, roomSlug, isHost]);
+  }, [emit, roomSlug, isHost, urlModalMode, addToQueue]);
 
   // Host: receive video suggestion from viewer
   useEffect(() => {
@@ -134,6 +153,23 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     emit('video:url-suggest-reject', { roomSlug });
     setVideoSuggestion(null);
   }, [emit, roomSlug]);
+
+  // ─── Queue listeners ───
+  useEffect(() => {
+    const u1 = on('queue:state', (items) => setQueue(items));
+    return u1;
+  }, [on]);
+
+  useEffect(() => {
+    const u2 = on('queue:added', (item) => setQueue(prev => [...prev, item]));
+    return u2;
+  }, [on]);
+
+  useEffect(() => {
+    const u3 = on('queue:removed', ({ id }) => setQueue(prev => prev.filter(q => q.id !== id)));
+    return u3;
+  }, [on]);
+
 
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(`${window.location.origin}/room/${roomSlug}`).then(() => {
@@ -193,6 +229,29 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         )}
       </AnimatePresence>
 
+      {/* ─── Unified Video Request Toast ─── */}
+      <AnimatePresence>
+        {videoRequest && isHost && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
+            className="fixed top-6 left-1/2 z-50 bg-[var(--color-bg-1)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-2xl px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+            style={{ transform: 'translateX(-50%)', minWidth: 320, maxWidth: '90vw' }}
+          >
+            <p className="text-[13px] text-[var(--color-text-2)] mb-3 text-center">
+              <span className="text-[var(--color-text-0)] font-semibold">{videoRequest.username}</span>
+              {' '}requests to {videoRequest.action === 'play' ? 'play' : `seek to ${Math.floor((videoRequest.currentTime || 0) / 60)}:${String(Math.floor((videoRequest.currentTime || 0) % 60)).padStart(2, '0')}`}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={acceptVideoRequest} className="flex-1 btn-glow py-2 text-xs">Accept</button>
+              <button onClick={rejectVideoRequest} className="flex-1 btn-secondary py-2 text-xs hover:text-[var(--color-error)]">Reject</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
       {/* ─── Change Video Modal ─── */}
       <AnimatePresence>
         {showUrlModal && (
@@ -211,7 +270,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               className="relative w-full max-w-lg bg-[var(--color-bg-1)]/90 backdrop-blur-xl border border-[var(--color-border)] rounded-2xl p-6 shadow-2xl"
             >
               <div className="flex items-center justify-between mb-5">
-                <h3 className="text-[16px] font-semibold text-[var(--color-text-0)]">Change Video</h3>
+                <h3 className="text-[16px] font-semibold text-[var(--color-text-0)]">{urlModalMode === 'queue' ? 'Add to Queue' : isHost ? 'Change Video' : 'Suggest Video'}</h3>
                 <button onClick={() => setShowUrlModal(false)} className="text-[var(--color-text-4)] hover:text-[var(--color-text-1)] transition-colors">
                   <IconX size={20} />
                 </button>
@@ -261,8 +320,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto">
-            <button onClick={() => setShowUrlModal(true)} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]">
+            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]">
               <IconPlus size={14} /> {isHost ? 'Change Video' : 'Suggest Video'}
+            </button>
+            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="sm:hidden w-9 h-9 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] flex items-center justify-center text-black transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]" title={isHost ? 'Change Video' : 'Suggest Video'}>
+              <IconPlus size={16} />
             </button>
             
             {isInCall ? (
@@ -323,27 +385,73 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           </div>
         </div>
         
-        {/* Mobile controls row */}
-        <div className="sm:hidden px-4 pb-4 flex justify-center flex-shrink-0">
-           <button onClick={() => setShowUrlModal(true)} className="w-full h-12 rounded-xl bg-white/10 text-white font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
-              <IconPlus size={16} /> {isHost ? 'Change Video' : 'Suggest Video'}
-           </button>
-        </div>
+
       </div>
 
-      {/* ─── Unified Chat Sidebar (Desktop & Mobile) ─── */}
+      {/* ─── Unified Sidebar (Desktop & Mobile) ─── */}
       <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
-        <div className="p-3 sm:p-4 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <h2 className="text-[14px] font-semibold text-[var(--color-text-0)] tracking-tight">Room Chat</h2>
-            <span className="text-[10px] text-[var(--color-text-4)] font-mono">{messages.length} messages</span>
+        {/* Tab Header */}
+        <div className="p-2 sm:p-3 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between gap-2">
+          <div className="flex items-center gap-1 bg-[var(--color-bg-0)] rounded-lg p-0.5 flex-1">
+            <button onClick={() => setSidebarTab('chat')} className={`flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-all ${sidebarTab === 'chat' ? 'bg-[var(--color-bg-3)] text-[var(--color-text-0)] shadow-sm' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
+              Chat {messages.length > 0 && <span className="text-[9px] opacity-60 ml-0.5">{messages.length}</span>}
+            </button>
+            <button onClick={() => setSidebarTab('queue')} className={`flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-all relative ${sidebarTab === 'queue' ? 'bg-[var(--color-bg-3)] text-[var(--color-text-0)] shadow-sm' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
+              Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#D4A06A] font-bold">{queue.length}</span>}
+            </button>
           </div>
-          <button onClick={() => setChatOpen(false)} className="lg:hidden w-8 h-8 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors">
-            <IconX size={14} />
+          <button onClick={() => setChatOpen(false)} className="lg:hidden w-7 h-7 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors shrink-0">
+            <IconX size={12} />
           </button>
         </div>
+
+        {/* Tab Content */}
         <div className="flex-1 overflow-hidden relative">
-          <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
+          {sidebarTab === 'chat' ? (
+            <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
+          ) : (
+            <div className="flex flex-col h-full">
+              {/* Queue List */}
+              <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
+                {queue.length === 0 ? (
+                  <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40">
+                    <IconPlay size={24} className="text-[var(--color-text-4)]" />
+                    <p className="text-[12px] text-[var(--color-text-4)] text-center">Queue is empty.<br />Add videos to play next.</p>
+                  </div>
+                ) : (
+                  queue.map((item, i) => (
+                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-bg-0)] border border-[var(--color-border)] group hover:border-[var(--color-border-hover)] transition-all">
+                      <div className="w-7 h-7 rounded-lg bg-[var(--color-bg-3)] flex items-center justify-center text-[11px] font-bold text-[var(--color-text-3)] shrink-0">
+                        {i + 1}
+                      </div>
+                      <div className="min-w-0 flex-1">
+                        <p className="text-[13px] font-medium text-[var(--color-text-0)] truncate">{item.title || item.originalUrl}</p>
+                        <p className="text-[10px] text-[var(--color-text-4)]">
+                          Added by <span className="text-[var(--color-text-2)]">{item.addedByName}</span>
+                        </p>
+                      </div>
+                      {isHost && (
+                        <button onClick={() => removeFromQueue(item.id)} className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--color-text-4)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-all opacity-0 group-hover:opacity-100 shrink-0">
+                          <IconX size={10} />
+                        </button>
+                      )}
+                    </div>
+                  ))
+                )}
+              </div>
+              {/* Queue Controls */}
+              <div className="p-3 border-t border-[var(--color-border)] space-y-2 flex-shrink-0">
+                {queue.length > 0 && isHost && (
+                  <button onClick={playNext} className="w-full py-2.5 rounded-xl bg-[#D4A06A] text-black text-[13px] font-semibold hover:bg-[#c4885a] transition-colors flex items-center justify-center gap-2">
+                    <IconPlay size={14} /> Play Next
+                  </button>
+                )}
+                <button onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }} className="w-full py-2.5 rounded-xl bg-[var(--color-bg-3)] text-[var(--color-text-1)] text-[13px] font-medium hover:bg-[var(--color-bg-4)] transition-colors flex items-center justify-center gap-2 border border-[var(--color-border)]">
+                  <IconPlus size={14} /> Add to Queue
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
       

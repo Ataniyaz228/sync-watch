@@ -1,7 +1,7 @@
 'use client';
 
 import { useCallback, useRef, useEffect, useState } from 'react';
-import type { ServerToClientEvents } from '@/types';
+import type { ServerToClientEvents, RequestAction } from '@/types';
 
 interface UseVideoSyncOptions {
   on: <E extends keyof ServerToClientEvents>(event: E, handler: ServerToClientEvents[E]) => () => void;
@@ -24,12 +24,19 @@ export interface PauseRequest {
   currentTime: number;
 }
 
+export interface VideoRequest {
+  username: string;
+  action: RequestAction;
+  currentTime?: number;
+}
+
 const SYNC_THRESHOLD = 1.5;
 const SYNC_DEBOUNCE = 300;
 
 export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideoSyncOptions) {
   const isSyncingRef = useRef(false);
   const [pauseRequest, setPauseRequest] = useState<PauseRequest | null>(null);
+  const [videoRequest, setVideoRequest] = useState<VideoRequest | null>(null);
 
   const setSyncing = (v: boolean) => { isSyncingRef.current = v; };
 
@@ -81,11 +88,22 @@ export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideo
     return unsub;
   }, [on, isHost]);
 
+  // Host receives unified request from viewer
+  useEffect(() => {
+    const unsub = on('video:request', (data) => {
+      if (isHost) setVideoRequest(data);
+    });
+    return unsub;
+  }, [on, isHost]);
+
   // Viewer receives rejection
   useEffect(() => {
-    const unsub = on('video:pause-request-rejected', () => {
-      // could show a toast — for now silently ignore
-    });
+    const unsub = on('video:pause-request-rejected', () => {});
+    return unsub;
+  }, [on]);
+
+  useEffect(() => {
+    const unsub = on('video:request-rejected', () => {});
     return unsub;
   }, [on]);
 
@@ -101,11 +119,28 @@ export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideo
     setPauseRequest(null);
   }, [emit, roomSlug]);
 
-  // Local PLAY — host only
+  // Host: accept video request
+  const acceptVideoRequest = useCallback(() => {
+    if (!videoRequest) return;
+    emit('video:request-accept', { roomSlug, action: videoRequest.action, currentTime: videoRequest.currentTime });
+    setVideoRequest(null);
+  }, [emit, roomSlug, videoRequest]);
+
+  // Host: reject video request
+  const rejectVideoRequest = useCallback(() => {
+    if (!videoRequest) return;
+    emit('video:request-reject', { roomSlug, action: videoRequest.action });
+    setVideoRequest(null);
+  }, [emit, roomSlug, videoRequest]);
+
+  // Local PLAY
   const onLocalPlay = useCallback((currentTime: number) => {
     if (isSyncingRef.current) return;
-    if (!isHost) return;
-    emit('video:play', { roomSlug, currentTime });
+    if (isHost) {
+      emit('video:play', { roomSlug, currentTime });
+    } else {
+      emit('video:request', { roomSlug, action: 'play' as RequestAction, currentTime });
+    }
   }, [emit, roomSlug, isHost]);
 
   // Local PAUSE — host emits directly, viewer sends a request
@@ -114,17 +149,23 @@ export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideo
     if (isHost) {
       emit('video:pause', { roomSlug, currentTime });
     } else {
-      // Viewer: send pause request to host
       emit('video:pause-request', { roomSlug, currentTime });
     }
   }, [emit, roomSlug, isHost]);
 
-  // Local SEEK — host only
+  // Local SEEK
   const onLocalSeek = useCallback((currentTime: number) => {
     if (isSyncingRef.current) return;
-    if (!isHost) return;
-    emit('video:seek', { roomSlug, currentTime });
+    if (isHost) {
+      emit('video:seek', { roomSlug, currentTime });
+    } else {
+      emit('video:request', { roomSlug, action: 'seek' as RequestAction, currentTime });
+    }
   }, [emit, roomSlug, isHost]);
 
-  return { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest };
+  return {
+    onLocalPlay, onLocalPause, onLocalSeek,
+    pauseRequest, acceptPauseRequest, rejectPauseRequest,
+    videoRequest, acceptVideoRequest, rejectVideoRequest,
+  };
 }

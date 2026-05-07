@@ -8,6 +8,18 @@ export interface VideoResolution {
   title?: string;
 }
 
+export interface QueueItem {
+  id: string;
+  type: VideoType;
+  resolvedUrl: string;
+  originalUrl: string;
+  title?: string;
+  addedBy: string;
+  addedByName: string;
+}
+
+export type RequestAction = 'pause' | 'play' | 'seek';
+
 export interface Room {
   id: string;
   slug: string;
@@ -78,8 +90,13 @@ export interface ServerToClientEvents {
   'chat:reaction': (data: { messageId: string; reaction: ChatReaction; action: 'add' | 'remove' }) => void;
   'video:pause-request': (data: { username: string; currentTime: number }) => void;
   'video:pause-request-rejected': () => void;
+  'video:request': (data: { username: string; action: RequestAction; currentTime?: number }) => void;
+  'video:request-rejected': (data: { action: RequestAction }) => void;
   'video:url-suggest': (data: { username: string; url: string; title?: string; type: string; resolvedUrl: string; originalUrl: string }) => void;
   'video:url-suggest-rejected': () => void;
+  'queue:state': (data: QueueItem[]) => void;
+  'queue:added': (data: QueueItem) => void;
+  'queue:removed': (data: { id: string }) => void;
   'voice:offer': (data: { sdp: string; from: string }) => void;
   'voice:answer': (data: { sdp: string; from: string }) => void;
   'voice:ice-candidate': (data: { candidate: string; from: string }) => void;
@@ -100,9 +117,15 @@ export interface ClientToServerEvents {
   'video:pause-request': (data: { roomSlug: string; currentTime: number }) => void;
   'video:pause-request-accept': (data: { roomSlug: string }) => void;
   'video:pause-request-reject': (data: { roomSlug: string }) => void;
+  'video:request': (data: { roomSlug: string; action: RequestAction; currentTime?: number }) => void;
+  'video:request-accept': (data: { roomSlug: string; action: RequestAction; currentTime?: number }) => void;
+  'video:request-reject': (data: { roomSlug: string; action: RequestAction }) => void;
   'video:url-suggest': (data: { roomSlug: string } & VideoResolution) => void;
   'video:url-suggest-accept': (data: { roomSlug: string } & VideoResolution) => void;
   'video:url-suggest-reject': (data: { roomSlug: string }) => void;
+  'queue:add': (data: { roomSlug: string } & VideoResolution) => void;
+  'queue:remove': (data: { roomSlug: string; id: string }) => void;
+  'queue:play-next': (data: { roomSlug: string }) => void;
   'voice:offer': (data: { roomSlug: string; sdp: string; targetUserId: string }) => void;
   'voice:answer': (data: { roomSlug: string; sdp: string; targetUserId: string }) => void;
   'voice:ice-candidate': (data: { roomSlug: string; candidate: string; targetUserId: string }) => void;

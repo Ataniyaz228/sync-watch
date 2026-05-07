@@ -1,5 +1,5 @@
 import type { Server, Socket } from 'socket.io';
-import type { ServerToClientEvents, ClientToServerEvents, ChatMessage } from '../types/index.js';
+import type { ServerToClientEvents, ClientToServerEvents, ChatMessage, QueueItem } from '../types/index.js';
 import {
   addUserToRoom,
   removeUserFromRoom,
@@ -14,6 +14,13 @@ import { eq } from 'drizzle-orm';
 
 type TypedIO = Server<ClientToServerEvents, ServerToClientEvents>;
 type TypedSocket = Socket<ClientToServerEvents, ServerToClientEvents>;
+
+// In-memory queue per room
+const roomQueues = new Map<string, QueueItem[]>();
+function getQueue(roomSlug: string): QueueItem[] {
+  if (!roomQueues.has(roomSlug)) roomQueues.set(roomSlug, []);
+  return roomQueues.get(roomSlug)!;
+}
 
 export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
   socket.on('room:join', async (data) => {
@@ -58,6 +65,9 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     if (state) {
       socket.emit('video:sync-state', state);
     }
+
+    // Send queue state
+    socket.emit('queue:state', getQueue(roomSlug));
 
     console.log(`[Room] ${username} joined ${roomSlug} (${usersCount} users)`);
   });
@@ -294,6 +304,109 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     if (state) {
       socket.emit('video:sync-state', state);
     }
+  });
+
+  // ─── Queue handlers ───
+
+  socket.on('queue:add', (data) => {
+    const { roomSlug, type, resolvedUrl, originalUrl, title } = data;
+    const userId = (socket.data as { userId?: string }).userId || 'unknown';
+    const username = (socket.data as { username?: string }).username || 'Someone';
+
+    const item: QueueItem = {
+      id: crypto.randomUUID(),
+      type, resolvedUrl, originalUrl, title,
+      addedBy: userId,
+      addedByName: username,
+    };
+
+    const queue = getQueue(roomSlug);
+    queue.push(item);
+    io.to(roomSlug).emit('queue:added', item);
+  });
+
+  socket.on('queue:remove', (data) => {
+    const { roomSlug, id } = data;
+    const queue = getQueue(roomSlug);
+    const idx = queue.findIndex(q => q.id === id);
+    if (idx !== -1) {
+      queue.splice(idx, 1);
+      io.to(roomSlug).emit('queue:removed', { id });
+    }
+  });
+
+  socket.on('queue:play-next', async (data) => {
+    const { roomSlug } = data;
+    const queue = getQueue(roomSlug);
+    if (queue.length === 0) return;
+
+    const next = queue.shift()!;
+    const userId = (socket.data as { userId?: string }).userId || 'unknown';
+
+    // Broadcast url change
+    io.to(roomSlug).emit('video:url-changed', {
+      type: next.type, resolvedUrl: next.resolvedUrl, originalUrl: next.originalUrl, title: next.title, userId,
+    });
+
+    // Update state
+    const state = await getRoomState(roomSlug);
+    await setRoomState(roomSlug, {
+      ...state,
+      type: next.type, resolvedUrl: next.resolvedUrl, url: next.originalUrl, title: next.title,
+      currentTime: 0, isPlaying: true, updatedAt: Date.now(),
+    });
+
+    // Broadcast updated queue
+    io.to(roomSlug).emit('queue:state', queue);
+  });
+
+  // ─── Unified viewer requests (play/seek) ───
+
+  socket.on('video:request', async (data) => {
+    const { roomSlug, action, currentTime } = data;
+    const username = (socket.data as { username?: string }).username || 'Someone';
+
+    const roomSockets = io.sockets.adapter.rooms.get(roomSlug);
+    if (!roomSockets) return;
+
+    const db = getDb();
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        if (room.length > 0) {
+          for (const sid of roomSockets) {
+            const s = io.sockets.sockets.get(sid);
+            if (s && (s.data as { userId?: string }).userId === room[0].createdBy) {
+              s.emit('video:request', { username, action, currentTime });
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Room] Video request error:', err);
+      }
+    }
+  });
+
+  socket.on('video:request-accept', async (data) => {
+    const { roomSlug, action, currentTime } = data;
+    const userId = (socket.data as { userId?: string }).userId || 'unknown';
+
+    if (action === 'play') {
+      const ct = currentTime ?? 0;
+      io.to(roomSlug).emit('video:play', { currentTime: ct, userId });
+      const state = await getRoomState(roomSlug);
+      await setRoomState(roomSlug, { ...state, currentTime: ct, isPlaying: true, updatedAt: Date.now() });
+    } else if (action === 'seek' && currentTime !== undefined) {
+      io.to(roomSlug).emit('video:seek', { currentTime, userId });
+      const state = await getRoomState(roomSlug);
+      await setRoomState(roomSlug, { ...state, currentTime, isPlaying: state?.isPlaying ?? false, updatedAt: Date.now() });
+    }
+  });
+
+  socket.on('video:request-reject', (data) => {
+    const { roomSlug, action } = data;
+    socket.to(roomSlug).emit('video:request-rejected', { action });
   });
 
   // Handle disconnect

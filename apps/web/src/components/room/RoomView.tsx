@@ -19,12 +19,17 @@ interface RoomViewProps {
   roomName: string;
   userId: string;
   username: string;
-  createdBy: string; // userId of room creator
+  createdBy: string;
+  initialVideoUrl?: string;
+  initialVideoType?: string;
+  initialResolvedUrl?: string;
+  initialVideoTitle?: string;
 }
 
-export default function RoomView({ roomSlug, roomName, userId, username, createdBy }: RoomViewProps) {
+export default function RoomView({ roomSlug, roomName, userId, username, createdBy, initialVideoUrl, initialVideoType, initialResolvedUrl, initialVideoTitle }: RoomViewProps) {
   const isHost = userId === createdBy;
   const router = useRouter();
+  const initialLoadedRef = useRef(false);
 
   const [videoType, setVideoType] = useState<VideoType | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
@@ -32,8 +37,9 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [users, setUsers] = useState<string[]>([]);
   const [usersCount, setUsersCount] = useState(0);
   const [copied, setCopied] = useState(false);
-  const [chatOpen, setChatOpen] = useState(false); // Mobile chat sheet state
+  const [chatOpen, setChatOpen] = useState(false);
   const [showUrlModal, setShowUrlModal] = useState(false);
+  const [videoSuggestion, setVideoSuggestion] = useState<{ username: string; url: string; title?: string; type: string; resolvedUrl: string; originalUrl: string } | null>(null);
 
   const playerRef = useRef<VideoPlayerAPI | null>(null);
   const { emit, on } = useSocket(roomSlug, username, userId);
@@ -78,10 +84,55 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     return u;
   }, [on]);
 
+  // Auto-load video from history query params
+  useEffect(() => {
+    if (initialLoadedRef.current) return;
+    if (initialVideoUrl && initialVideoType) {
+      initialLoadedRef.current = true;
+      const resolvedUrl = initialResolvedUrl || initialVideoUrl;
+      const type = initialVideoType as VideoType;
+      setVideoType(type);
+      setVideoUrl(resolvedUrl);
+      setVideoTitle(initialVideoTitle || '');
+      if (isHost) {
+        emit('video:url-change', { roomSlug, type, resolvedUrl, originalUrl: initialVideoUrl, title: initialVideoTitle });
+      } else {
+        emit('video:url-suggest', { roomSlug, type, resolvedUrl, originalUrl: initialVideoUrl, title: initialVideoTitle });
+      }
+    }
+  }, [initialVideoUrl, initialVideoType, initialResolvedUrl, initialVideoTitle, isHost, emit, roomSlug]);
+
   const handleVideoResolved = useCallback((r: VideoResolution) => {
-    setVideoType(r.type); setVideoUrl(r.resolvedUrl); setVideoTitle(r.title || '');
-    emit('video:url-change', { roomSlug, ...r });
+    if (isHost) {
+      // Host changes video directly
+      setVideoType(r.type); setVideoUrl(r.resolvedUrl); setVideoTitle(r.title || '');
+      emit('video:url-change', { roomSlug, ...r });
+    } else {
+      // Viewer suggests video to host
+      emit('video:url-suggest', { roomSlug, ...r });
+    }
     setShowUrlModal(false);
+  }, [emit, roomSlug, isHost]);
+
+  // Host: receive video suggestion from viewer
+  useEffect(() => {
+    const u = on('video:url-suggest', (d) => {
+      if (isHost) setVideoSuggestion(d);
+    });
+    return u;
+  }, [on, isHost]);
+
+  const acceptVideoSuggestion = useCallback(() => {
+    if (!videoSuggestion) return;
+    const { type, resolvedUrl, originalUrl, title } = videoSuggestion;
+    setVideoType(type as VideoType); setVideoUrl(resolvedUrl); setVideoTitle(title || '');
+    emit('video:url-suggest-accept', { roomSlug, type: type as VideoType, resolvedUrl, originalUrl, title });
+    setVideoSuggestion(null);
+  }, [videoSuggestion, emit, roomSlug]);
+
+  const rejectVideoSuggestion = useCallback(() => {
+    emit('video:url-suggest-reject', { roomSlug });
+    setVideoSuggestion(null);
   }, [emit, roomSlug]);
 
   const copyLink = useCallback(() => {
@@ -111,6 +162,32 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             <div className="flex gap-3">
               <button onClick={acceptPauseRequest} className="flex-1 btn-glow py-2 text-xs">Accept</button>
               <button onClick={rejectPauseRequest} className="flex-1 btn-secondary py-2 text-xs hover:text-[var(--color-error)]">Reject</button>
+            </div>
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* ─── Video Suggestion Toast ─── */}
+      <AnimatePresence>
+        {videoSuggestion && isHost && (
+          <motion.div
+            initial={{ opacity: 0, y: -20, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: -20, scale: 0.95 }}
+            transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
+            className="fixed top-6 left-1/2 z-50 bg-[var(--color-bg-1)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-2xl px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
+            style={{ transform: 'translateX(-50%)', minWidth: 320, maxWidth: '90vw' }}
+          >
+            <p className="text-[13px] text-[var(--color-text-2)] mb-1 text-center">
+              <span className="text-[var(--color-text-0)] font-semibold">{videoSuggestion.username}</span>
+              {' '}suggests a video
+            </p>
+            <p className="text-[11px] text-[#D4A06A] font-medium text-center truncate mb-3">
+              {videoSuggestion.title || videoSuggestion.url}
+            </p>
+            <div className="flex gap-3">
+              <button onClick={acceptVideoSuggestion} className="flex-1 btn-glow py-2 text-xs">Accept</button>
+              <button onClick={rejectVideoSuggestion} className="flex-1 btn-secondary py-2 text-xs hover:text-[var(--color-error)]">Reject</button>
             </div>
           </motion.div>
         )}
@@ -184,11 +261,9 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto">
-            {isHost && (
-              <button onClick={() => setShowUrlModal(true)} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]">
-                <IconPlus size={14} /> Change Video
-              </button>
-            )}
+            <button onClick={() => setShowUrlModal(true)} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]">
+              <IconPlus size={14} /> {isHost ? 'Change Video' : 'Suggest Video'}
+            </button>
             
             {isInCall ? (
               <div className="flex items-center bg-black/40 backdrop-blur-md border border-white/10 rounded-full p-1 shadow-lg">
@@ -248,14 +323,12 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           </div>
         </div>
         
-        {/* Mobile controls row for host (if they need to change video) */}
-        {isHost && (
-          <div className="sm:hidden px-4 pb-4 flex justify-center flex-shrink-0">
-             <button onClick={() => setShowUrlModal(true)} className="w-full h-12 rounded-xl bg-white/10 text-white font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
-                <IconPlus size={16} /> Change Video
-             </button>
-          </div>
-        )}
+        {/* Mobile controls row */}
+        <div className="sm:hidden px-4 pb-4 flex justify-center flex-shrink-0">
+           <button onClick={() => setShowUrlModal(true)} className="w-full h-12 rounded-xl bg-white/10 text-white font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
+              <IconPlus size={16} /> {isHost ? 'Change Video' : 'Suggest Video'}
+           </button>
+        </div>
       </div>
 
       {/* ─── Unified Chat Sidebar (Desktop & Mobile) ─── */}

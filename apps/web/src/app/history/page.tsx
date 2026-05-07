@@ -133,7 +133,15 @@ export default function HistoryPage() {
                   initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: i * 0.05, duration: 0.4 }}
-                  onClick={() => router.push(`/room/${item.roomSlug}`)}
+                  onClick={() => {
+                    const params = new URLSearchParams({ 
+                      loadUrl: item.url, 
+                      loadType: item.videoType,
+                      ...(item.resolvedUrl ? { loadResolved: item.resolvedUrl } : {}),
+                      ...(item.title ? { loadTitle: item.title } : {})
+                    });
+                    router.push(`/room/${item.roomSlug}?${params.toString()}`);
+                  }}
                   className="w-full text-left auth-card p-5 sm:p-6 flex items-start sm:items-center gap-4 sm:gap-6 hover:border-[var(--color-border-hover)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all cursor-pointer group"
                 >
                   <div className="w-10 h-10 rounded-lg surface-raised flex items-center justify-center flex-shrink-0 border border-[var(--color-border)] group-hover:border-[var(--color-accent-muted)] group-hover:bg-[var(--color-accent-dim)] transition-colors mt-1 sm:mt-0">

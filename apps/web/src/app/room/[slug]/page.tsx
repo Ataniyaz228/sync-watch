@@ -1,7 +1,7 @@
 'use client';
 
 import { useEffect, useState } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams, useRouter, useSearchParams } from 'next/navigation';
 import { motion } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import RoomView from '@/components/room/RoomView';
@@ -93,6 +93,12 @@ export default function RoomPage() {
 
   if (!user || !room) return null;
 
+  const searchParams = useSearchParams();
+  const loadUrl = searchParams.get('loadUrl') || undefined;
+  const loadType = searchParams.get('loadType') || undefined;
+  const loadResolved = searchParams.get('loadResolved') || undefined;
+  const loadTitle = searchParams.get('loadTitle') || undefined;
+
   return (
     <RoomView
       roomSlug={room.slug}
@@ -100,6 +106,10 @@ export default function RoomPage() {
       userId={user.id}
       username={user.username}
       createdBy={room.createdBy}
+      initialVideoUrl={loadUrl}
+      initialVideoType={loadType}
+      initialResolvedUrl={loadResolved}
+      initialVideoTitle={loadTitle}
     />
   );
 }

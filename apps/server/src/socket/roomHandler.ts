@@ -119,6 +119,73 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     socket.to(roomSlug).emit('video:pause-request-rejected');
   });
 
+  // Viewer suggests a video → notify host
+  socket.on('video:url-suggest', async (data) => {
+    const { roomSlug, type, resolvedUrl, originalUrl, title } = data;
+    const username = (socket.data as { username?: string }).username || 'Someone';
+
+    const roomSockets = io.sockets.adapter.rooms.get(roomSlug);
+    if (!roomSockets) return;
+
+    const db = getDb();
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        if (room.length > 0) {
+          for (const sid of roomSockets) {
+            const s = io.sockets.sockets.get(sid);
+            if (s && (s.data as { userId?: string }).userId === room[0].createdBy) {
+              s.emit('video:url-suggest', { username, url: originalUrl, title, type, resolvedUrl, originalUrl });
+              break;
+            }
+          }
+        }
+      } catch (err) {
+        console.error('[Room] Video suggest error:', err);
+      }
+    }
+  });
+
+  // Host accepts video suggestion → treat as url-change
+  socket.on('video:url-suggest-accept', async (data) => {
+    const { roomSlug, type, resolvedUrl, originalUrl, title } = data;
+    const userId = (socket.data as { userId?: string }).userId || 'unknown';
+
+    io.to(roomSlug).emit('video:url-changed', { type, resolvedUrl, originalUrl, title, userId });
+
+    const state = await getRoomState(roomSlug);
+    await setRoomState(roomSlug, {
+      ...state,
+      type,
+      resolvedUrl,
+      url: originalUrl,
+      title,
+      currentTime: 0,
+      isPlaying: false,
+      updatedAt: Date.now(),
+    });
+
+    // Save to DB
+    const db = getDb();
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        if (room.length > 0) {
+          await db.update(schema.rooms).set({ currentUrl: originalUrl, videoType: type, updatedAt: new Date() }).where(eq(schema.rooms.id, room[0].id));
+          await db.insert(schema.watchHistory).values({ roomId: room[0].id, url: originalUrl, videoType: type, resolvedUrl, title, addedBy: userId });
+        }
+      } catch (err) {
+        console.error('[Room] Video suggest accept DB error:', err);
+      }
+    }
+  });
+
+  // Host rejects video suggestion
+  socket.on('video:url-suggest-reject', (data) => {
+    const { roomSlug } = data;
+    socket.to(roomSlug).emit('video:url-suggest-rejected');
+  });
+
   // Video sync events
   socket.on('video:play', async (data) => {
     const { roomSlug, currentTime } = data;

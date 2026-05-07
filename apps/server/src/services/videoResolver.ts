@@ -48,6 +48,16 @@ function detectVideoType(url: string): { type: VideoType; resolvedUrl: string; t
     return { type: 'mp4', resolvedUrl: url };
   }
 
+  // VK Video — convert to embed format
+  // Matches: vk.com/video-123456_789012, vk.com/video123456_789012, vk.com/clip-123_456
+  const vkMatch = url.match(/vk\.com\/(?:video|clip)(-?\d+)_(\d+)/);
+  if (vkMatch) {
+    const oid = vkMatch[1];
+    const id = vkMatch[2];
+    const embedUrl = `https://vk.com/video_ext.php?oid=${oid}&id=${id}&hd=2`;
+    return { type: 'iframe', resolvedUrl: embedUrl };
+  }
+
   // Known iframe domains
   for (const domain of IFRAME_DOMAINS) {
     if (lowerUrl.includes(domain)) {

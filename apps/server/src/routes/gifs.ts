@@ -2,7 +2,7 @@ import { Hono } from 'hono';
 
 const gifs = new Hono();
 
-const TENOR_KEY = process.env.TENOR_API_KEY || '';
+const GIPHY_KEY = process.env.GIPHY_API_KEY || '';
 
 // GET /api/gifs/search?q=funny&limit=20
 gifs.get('/search', async (c) => {
@@ -13,21 +13,20 @@ gifs.get('/search', async (c) => {
     return c.json({ results: [] });
   }
 
-  if (!TENOR_KEY) {
-    return c.json({ error: 'TENOR_API_KEY not configured' }, 500);
+  if (!GIPHY_KEY) {
+    return c.json({ error: 'GIPHY_API_KEY not configured' }, 500);
   }
 
   try {
-    const url = `https://tenor.googleapis.com/v2/search?q=${encodeURIComponent(q)}&key=${TENOR_KEY}&limit=${limit}&media_filter=gif&contentfilter=medium`;
+    const url = `https://api.giphy.com/v1/gifs/search?api_key=${GIPHY_KEY}&q=${encodeURIComponent(q)}&limit=${limit}&rating=pg-13&lang=en`;
     const res = await fetch(url);
     const data = await res.json();
 
-    const results = (data.results || []).map((r: any) => ({
-      id: r.id,
-      title: r.title || r.content_description || '',
-      url: r.media_formats?.gif?.url || r.media_formats?.tinygif?.url || '',
-      preview: r.media_formats?.tinygif?.url || r.media_formats?.nanogif?.url || '',
-      dims: r.media_formats?.gif?.dims || [200, 200],
+    const results = (data.data || []).map((g: any) => ({
+      id: g.id,
+      title: g.title || '',
+      url: g.images?.fixed_height?.url || g.images?.original?.url || '',
+      preview: g.images?.fixed_height_small?.url || g.images?.preview_gif?.url || g.images?.fixed_height?.url || '',
     }));
 
     return c.json({ results });
@@ -41,21 +40,20 @@ gifs.get('/search', async (c) => {
 gifs.get('/trending', async (c) => {
   const limit = c.req.query('limit') || '20';
 
-  if (!TENOR_KEY) {
-    return c.json({ error: 'TENOR_API_KEY not configured' }, 500);
+  if (!GIPHY_KEY) {
+    return c.json({ error: 'GIPHY_API_KEY not configured' }, 500);
   }
 
   try {
-    const url = `https://tenor.googleapis.com/v2/featured?key=${TENOR_KEY}&limit=${limit}&media_filter=gif&contentfilter=medium`;
+    const url = `https://api.giphy.com/v1/gifs/trending?api_key=${GIPHY_KEY}&limit=${limit}&rating=pg-13`;
     const res = await fetch(url);
     const data = await res.json();
 
-    const results = (data.results || []).map((r: any) => ({
-      id: r.id,
-      title: r.title || r.content_description || '',
-      url: r.media_formats?.gif?.url || r.media_formats?.tinygif?.url || '',
-      preview: r.media_formats?.tinygif?.url || r.media_formats?.nanogif?.url || '',
-      dims: r.media_formats?.gif?.dims || [200, 200],
+    const results = (data.data || []).map((g: any) => ({
+      id: g.id,
+      title: g.title || '',
+      url: g.images?.fixed_height?.url || g.images?.original?.url || '',
+      preview: g.images?.fixed_height_small?.url || g.images?.preview_gif?.url || g.images?.fixed_height?.url || '',
     }));
 
     return c.json({ results });

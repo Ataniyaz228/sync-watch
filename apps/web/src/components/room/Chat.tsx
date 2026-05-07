@@ -168,7 +168,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
 
             {/* Tenor Attribution */}
             <div className="px-3 py-1.5 text-center border-t border-[var(--color-border)]">
-              <span className="text-[9px] text-[var(--color-text-4)] uppercase tracking-wider font-medium">Powered by Tenor</span>
+              <span className="text-[9px] text-[var(--color-text-4)] uppercase tracking-wider font-medium">Powered by GIPHY</span>
             </div>
           </motion.div>
         )}

@@ -51,7 +51,11 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
             <motion.div key={msg.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15 }} className="py-0.5">
               {msg.isSystem || msg.type === 'system' ? (
-                <p className="text-[10px] text-[var(--color-text-4)] text-center py-1">{msg.content}</p>
+                <div className="flex items-center gap-3 py-2 my-1 opacity-80">
+                  <div className="h-px bg-gradient-to-r from-transparent to-[#D4A06A]/30 flex-1" />
+                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4A06A]">{msg.content}</span>
+                  <div className="h-px bg-gradient-to-l from-transparent to-[#D4A06A]/30 flex-1" />
+                </div>
               ) : (
                 <Bubble msg={msg} isOwn={msg.userId === currentUserId} onReact={onReact}
                   activeReactionId={activeReactionId} setActiveReactionId={setActiveReactionId}
@@ -64,12 +68,14 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
       </div>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="px-3 py-2.5 border-t border-[var(--color-border)] flex-shrink-0 safe-bottom flex items-center gap-2">
-        <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
-          placeholder="Message..." className="input-field text-sm py-2.5" maxLength={500} id="chat-input" />
-        <button type="submit" disabled={!input.trim()} className={`btn-icon ${input.trim() ? 'active' : ''}`} id="chat-send-btn">
-          <IconSend size={15} />
-        </button>
+      <form onSubmit={handleSubmit} className="px-3 py-3 border-t border-[var(--color-border)] flex-shrink-0 safe-bottom bg-[var(--color-bg-1)]">
+        <div className="relative flex items-center">
+          <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
+            placeholder="Type a message..." className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 focus:shadow-[0_0_15px_rgba(212,160,106,0.1)] rounded-full py-2.5 pl-4 pr-12 text-[13px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none" maxLength={500} id="chat-input" />
+          <button type="submit" disabled={!input.trim()} className={`absolute right-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${input.trim() ? 'bg-[#D4A06A] text-black shadow-[0_0_10px_rgba(212,160,106,0.4)] hover:scale-105' : 'bg-[var(--color-bg-3)] text-[var(--color-text-4)]'}`} id="chat-send-btn">
+            <IconSend size={13} className={input.trim() ? 'translate-x-[-1px]' : ''} />
+          </button>
+        </div>
       </form>
     </div>
   );

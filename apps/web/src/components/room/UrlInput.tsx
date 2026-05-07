@@ -18,6 +18,13 @@ export default function UrlInput({ onVideoResolved, disabled }: UrlInputProps) {
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!url.trim() || isLoading) return;
+    
+    // Prevent room inception
+    if (url.includes(window.location.host)) {
+      setError('Cannot play a SyncWatch room inside another room :)');
+      return;
+    }
+
     setIsLoading(true);
     setError('');
     try {

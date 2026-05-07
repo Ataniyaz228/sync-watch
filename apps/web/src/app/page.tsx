@@ -629,10 +629,12 @@ function EasterEgg() {
             initial={{ scale: 0 }}
             animate={{ scale: 1 }}
             transition={{ delay: 0.6, type: 'spring', stiffness: 200, damping: 12 }}
+            style={{ display: 'flex', justifyContent: 'center' }}
           >
             <motion.div
               animate={{ scale: [1, 1.15, 1] }}
               transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+              style={{ transformOrigin: 'center center', display: 'inline-flex' }}
             >
               <IconHeart size={32} className="ee-heart-accent" />
             </motion.div>

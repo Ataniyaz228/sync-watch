@@ -48,9 +48,10 @@ function detectVideoType(url: string): { type: VideoType; resolvedUrl: string; t
     return { type: 'mp4', resolvedUrl: url };
   }
 
-  // VK Video — convert to embed format
-  // Matches: vk.com/video-123456_789012, vk.com/video123456_789012, vk.com/clip-123_456
-  const vkMatch = url.match(/vk\.com\/(?:video|clip)(-?\d+)_(\d+)/);
+  // VK Video / Clips — convert to embed format
+  // Matches: vk.com/video-123_456, vk.com/clip-123_456, vkvideo.ru/video-123_456, etc.
+  const vkRegex = /(?:vk\.com|vkvideo\.ru)\/(?:(?:video|clip|.*z=video)(-?\d+)_(\d+))/;
+  const vkMatch = url.match(vkRegex);
   if (vkMatch) {
     const oid = vkMatch[1];
     const id = vkMatch[2];
@@ -142,10 +143,18 @@ function runYtDlp(url: string): Promise<{ directUrl: string; title: string; ext:
 
 export async function resolveVideo(url: string): Promise<VideoResolution> {
   // Check cache first
-  const cached = await getCachedVideoResolution(url);
-  if (cached) {
+  const cachedRaw = await getCachedVideoResolution(url);
+  if (cachedRaw) {
     try {
-      return typeof cached === 'string' ? JSON.parse(cached) : cached as unknown as VideoResolution;
+      const cached = typeof cachedRaw === 'string' ? JSON.parse(cachedRaw) : cachedRaw as unknown as VideoResolution;
+      
+      // If it's a VK link but the cached version isn't the proper embed, skip cache
+      const isVk = url.includes('vk.com') || url.includes('vkvideo.ru');
+      const isProperEmbed = cached.type === 'iframe' && cached.resolvedUrl.includes('video_ext.php');
+      
+      if (!isVk || isProperEmbed) {
+        return cached;
+      }
     } catch {
       // Cache corrupted, continue with resolution
     }

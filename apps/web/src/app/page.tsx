@@ -5,9 +5,47 @@ import { useRouter } from 'next/navigation';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '@/context/AuthContext';
 import { apiRequest } from '@/lib/utils';
-import { IconPlay, IconPlus, IconArrowRight, IconHeart, IconHistory } from '@/components/ui/Icons';
+import { IconPlay, IconPlus, IconArrowRight, IconHeart, IconHistory, IconLogOut, IconRadio, IconMic, IconFilm } from '@/components/ui/Icons';
 
-const SECRET = 'heart';
+const SECRET_SEQ = 'heart';
+
+/* ─── Floating Orbs Background ─── */
+function FloatingOrbs() {
+  return (
+    <div className="orbs-container">
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+    </div>
+  );
+}
+
+/* ─── Animated Grid Background ─── */
+function GridBackground() {
+  return (
+    <div className="grid-bg">
+      <div className="grid-lines" />
+      <div className="grid-fade" />
+    </div>
+  );
+}
+
+/* ─── Feature Pill ─── */
+function FeaturePill({ icon, label, detail }: { icon: React.ReactNode; label: string; detail: string }) {
+  return (
+    <motion.div
+      className="feature-pill"
+      whileHover={{ y: -2, scale: 1.02 }}
+      transition={{ type: 'spring', stiffness: 400, damping: 25 }}
+    >
+      <div className="feature-pill-icon">{icon}</div>
+      <div>
+        <p className="feature-pill-label">{label}</p>
+        <p className="feature-pill-detail">{detail}</p>
+      </div>
+    </motion.div>
+  );
+}
 
 export default function HomePage() {
   const router = useRouter();
@@ -23,7 +61,6 @@ export default function HomePage() {
   const [isCreating, setIsCreating] = useState(false);
   const [tab, setTab] = useState<'create' | 'join'>('create');
 
-  // Easter egg
   const [showEE, setShowEE] = useState(false);
   const bufRef = useRef('');
   const clickRef = useRef(0);
@@ -32,7 +69,10 @@ export default function HomePage() {
   useEffect(() => {
     const handler = (e: KeyboardEvent) => {
       bufRef.current = (bufRef.current + e.key.toLowerCase()).slice(-20);
-      if (bufRef.current.includes(SECRET)) { bufRef.current = ''; triggerEE(); }
+      if (bufRef.current.includes(SECRET_SEQ)) {
+        bufRef.current = '';
+        triggerEE();
+      }
     };
     window.addEventListener('keydown', handler);
     return () => window.removeEventListener('keydown', handler);
@@ -42,19 +82,29 @@ export default function HomePage() {
     clickRef.current++;
     if (timerRef.current) clearTimeout(timerRef.current);
     timerRef.current = setTimeout(() => { clickRef.current = 0; }, 2000);
-    if (clickRef.current >= 5) { clickRef.current = 0; triggerEE(); }
+    if (clickRef.current >= 5) {
+      clickRef.current = 0;
+      triggerEE();
+    }
   };
 
-  const triggerEE = () => { setShowEE(true); setTimeout(() => setShowEE(false), 6000); };
+  const triggerEE = () => {
+    setShowEE(true);
+    setTimeout(() => setShowEE(false), 6000);
+  };
 
   const handleAuth = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!username.trim() || !password.trim()) return;
     setIsSubmitting(true);
     setAuthError('');
-    try { await login(username.trim(), password.trim()); }
-    catch (err) { setAuthError(err instanceof Error ? err.message : 'Failed'); }
-    finally { setIsSubmitting(false); }
+    try {
+      await login(username.trim(), password.trim());
+    } catch (err) {
+      setAuthError(err instanceof Error ? err.message : 'Authentication failed');
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   const handleCreate = async (e: React.FormEvent) => {
@@ -67,7 +117,7 @@ export default function HomePage() {
         body: JSON.stringify({ name: roomName.trim(), userId: user?.id }),
       });
       router.push(`/room/${room.slug}`);
-    } catch { /* */ }
+    } catch { /* handled */ }
     finally { setIsCreating(false); }
   };
 
@@ -79,252 +129,548 @@ export default function HomePage() {
 
   if (authLoading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center bg-[var(--color-bg-0)]">
-        <div className="spinner" style={{ width: 24, height: 24 }} />
+      <div className="landing-loader">
+        <div className="loader-ring">
+          <div className="loader-ring-inner" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh bg-[var(--color-bg-0)] flex flex-col" style={{ fontFamily: 'Inter, sans-serif' }}>
+    <div className="landing-root">
+      <FloatingOrbs />
+      <GridBackground />
       <div className="bg-noise" />
-      <AnimatePresence>{showEE && <EasterEgg />}</AnimatePresence>
 
-      {/* ── Nav ── */}
-      <nav className="sticky top-0 z-20 px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg-0)]" style={{ backdropFilter: 'blur(12px)' }}>
-        <button onClick={handleLogoClick} className="flex items-center gap-2.5 bg-transparent border-none cursor-pointer">
-          <div className="w-8 h-8 rounded-lg surface-raised flex items-center justify-center">
-            <IconPlay size={14} className="text-[var(--color-text-2)]" />
+      <AnimatePresence>
+        {showEE && <EasterEgg />}
+      </AnimatePresence>
+
+      {/* ─── Header ─── */}
+      <header className="landing-header">
+        <button
+          onClick={handleLogoClick}
+          className="logo-btn"
+          id="logo-button"
+        >
+          <div className="logo-icon">
+            <IconPlay size={11} />
           </div>
-          <span className="text-sm font-semibold text-[var(--color-text-0)] tracking-tight">SyncWatch</span>
+          <span className="logo-text">SyncWatch</span>
         </button>
+
         {user && (
-          <div className="flex items-center gap-3">
-            <button onClick={() => router.push('/history')}
-              className="flex items-center gap-1.5 text-xs text-[var(--color-text-4)] hover:text-[var(--color-text-2)] transition-colors">
-              <IconHistory size={13} />
-              <span className="hidden sm:inline">История</span>
+          <nav className="header-nav">
+            <button
+              onClick={() => router.push('/history')}
+              className="nav-link"
+              id="history-link"
+            >
+              <IconHistory size={14} />
+              <span className="nav-link-text">History</span>
             </button>
-            <span className="text-xs text-[var(--color-text-3)]">{user.username}</span>
-            <button onClick={logout} className="text-[11px] text-[var(--color-text-4)] hover:text-[var(--color-error)] transition-colors">
-              выйти
+            <div className="nav-divider" />
+            <div className="user-badge">
+              <div className="user-avatar-sm">
+                {user.username[0].toUpperCase()}
+              </div>
+              <span className="user-name-sm">{user.username}</span>
+            </div>
+            <button onClick={logout} className="nav-link logout-link" id="logout-btn">
+              <IconLogOut size={14} />
             </button>
-          </div>
+          </nav>
         )}
-      </nav>
+      </header>
 
-      {/* ── Hero ── */}
-      {!user ? (
-        <main className="flex-1 flex flex-col items-center justify-center px-5 pb-16">
-          <motion.div
-            initial={{ opacity: 0, y: 24 }}
-            animate={{ opacity: 1, y: 0 }}
-            transition={{ duration: 0.6, ease: [0.25, 1, 0.5, 1] }}
-            className="w-full max-w-[360px]"
-          >
-            {/* Headline */}
-            <div className="text-center mb-10">
-              <h1 className="text-[2.2rem] font-semibold tracking-tight text-[var(--color-text-0)] leading-[1.15] mb-3">
-                Смотрите вместе,<br />
-                <span style={{ color: 'var(--color-text-3)' }}>где бы вы ни были</span>
-              </h1>
-              <p className="text-sm text-[var(--color-text-4)] leading-relaxed">
-                Приватное пространство для двоих — синхронный просмотр, чат и голос.
-              </p>
-            </div>
+      {/* ─── Main ─── */}
+      <main className="landing-main">
+        <AnimatePresence mode="wait">
+          {!user ? (
+            <AuthView
+              key="auth"
+              {...{ username, setUsername, password, setPassword, authError, isSubmitting, handleAuth }}
+            />
+          ) : (
+            <DashboardView
+              key="dashboard"
+              user={user}
+              tab={tab}
+              setTab={setTab}
+              roomName={roomName}
+              setRoomName={setRoomName}
+              joinCode={joinCode}
+              setJoinCode={setJoinCode}
+              isCreating={isCreating}
+              handleCreate={handleCreate}
+              handleJoin={handleJoin}
+            />
+          )}
+        </AnimatePresence>
+      </main>
 
-            {/* Auth card */}
-            <div className="surface rounded-2xl p-6">
-              <p className="text-xs text-[var(--color-text-4)] mb-4">Войдите или создайте аккаунт</p>
-              <form onSubmit={handleAuth} className="space-y-3">
-                <input
-                  type="text" value={username} onChange={e => setUsername(e.target.value)}
-                  placeholder="Имя пользователя" className="input-field" required minLength={2} maxLength={50}
-                  autoComplete="username" id="auth-username"
-                />
-                <input
-                  type="password" value={password} onChange={e => setPassword(e.target.value)}
-                  placeholder="Пароль (мин. 4 символа)" className="input-field" required minLength={4}
-                  autoComplete="current-password" id="auth-password"
-                />
-                {authError && <p className="text-[var(--color-error)] text-xs">{authError}</p>}
-                <button type="submit" disabled={isSubmitting || !username.trim() || !password.trim()}
-                  className="btn-primary w-full flex items-center justify-center gap-2" id="auth-submit">
-                  {isSubmitting
-                    ? <span className="spinner" style={{ width: 14, height: 14 }} />
-                    : <><span>Войти</span><IconArrowRight size={14} /></>}
-                </button>
-              </form>
-            </div>
-
-            <p className="text-center text-[10px] text-[var(--color-text-4)] mt-6 tracking-widest uppercase">
-              сделано для нас двоих
-            </p>
-          </motion.div>
-        </main>
-      ) : (
-        <main className="flex-1 flex flex-col items-center justify-center px-5 py-8">
-          <div className="max-w-[420px] mx-auto w-full space-y-3">
-
-            {/* Welcome */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.4 }}
-              className="surface rounded-2xl px-5 py-4">
-              <div className="flex items-center gap-3">
-                <div className="w-9 h-9 rounded-xl surface-raised flex items-center justify-center text-sm font-bold text-[var(--color-text-2)]">
-                  {user.username[0].toUpperCase()}
-                </div>
-                <div>
-                  <p className="text-sm font-semibold text-[var(--color-text-0)]">{user.username}</p>
-                  <div className="flex items-center gap-1.5">
-                    <div className="status-dot live" />
-                    <p className="text-[11px] text-[var(--color-text-4)]">онлайн</p>
-                  </div>
-                </div>
-              </div>
-            </motion.div>
-
-            {/* Tabs */}
-            <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.05, duration: 0.4 }}
-              className="surface rounded-2xl overflow-hidden">
-              {/* Tab headers */}
-              <div className="grid grid-cols-2 border-b border-[var(--color-border)]">
-                {(['create', 'join'] as const).map(t => (
-                  <button key={t} onClick={() => setTab(t)} id={`tab-${t}`}
-                    className={`py-3.5 text-xs font-medium tracking-wide transition-colors relative ${
-                      tab === t ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'
-                    }`}>
-                    {t === 'create' ? 'Создать комнату' : 'Войти в комнату'}
-                    {tab === t && (
-                      <motion.div layoutId="tab-line" className="absolute bottom-0 left-4 right-4 h-[1.5px] bg-[var(--color-text-0)]" />
-                    )}
-                  </button>
-                ))}
-              </div>
-
-              <div className="p-5">
-                <AnimatePresence mode="wait">
-                  {tab === 'create' ? (
-                    <motion.form key="c" initial={{ opacity: 0, x: -8 }} animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: 8 }} transition={{ duration: 0.2 }}
-                      onSubmit={handleCreate} className="space-y-3">
-                      <div>
-                        <label className="label">Название</label>
-                        <input type="text" value={roomName} onChange={e => setRoomName(e.target.value)}
-                          placeholder="movie night ✨" className="input-field" required maxLength={100} id="room-name-input" />
-                      </div>
-                      <button type="submit" disabled={isCreating || !roomName.trim()}
-                        className="btn-primary w-full flex items-center justify-center gap-2" id="create-room-btn">
-                        {isCreating ? <span className="spinner" style={{ width: 14, height: 14 }} /> : <><IconPlus size={14} /><span>Создать</span></>}
-                      </button>
-                    </motion.form>
-                  ) : (
-                    <motion.form key="j" initial={{ opacity: 0, x: 8 }} animate={{ opacity: 1, x: 0 }}
-                      exit={{ opacity: 0, x: -8 }} transition={{ duration: 0.2 }}
-                      onSubmit={handleJoin} className="space-y-3">
-                      <div>
-                        <label className="label">Код комнаты</label>
-                        <input type="text" value={joinCode} onChange={e => setJoinCode(e.target.value)}
-                          placeholder="вставьте код" className="input-field font-mono" required id="join-code-input" />
-                      </div>
-                      <button type="submit" disabled={!joinCode.trim()}
-                        className="btn-primary w-full flex items-center justify-center gap-2" id="join-room-btn">
-                        <IconArrowRight size={14} /><span>Войти</span>
-                      </button>
-                    </motion.form>
-                  )}
-                </AnimatePresence>
-              </div>
-            </motion.div>
-
-            {/* Features */}
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.12, duration: 0.4 }}
-              className="grid grid-cols-3 gap-2">
-              {[
-                { label: 'Любой источник', sub: 'YouTube, HLS, MP4' },
-                { label: 'Живая синхронизация', sub: 'sub-секундная' },
-                { label: 'Голос + чат', sub: 'WebRTC' },
-              ].map(f => (
-                <div key={f.label} className="surface-raised rounded-xl p-3">
-                  <p className="text-[11px] font-medium text-[var(--color-text-2)] leading-tight mb-0.5">{f.label}</p>
-                  <p className="text-[10px] text-[var(--color-text-4)]">{f.sub}</p>
-                </div>
-              ))}
-            </motion.div>
-
-            <motion.p initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ delay: 0.18 }}
-              className="text-center text-[10px] text-[var(--color-text-4)] tracking-widest uppercase pt-2">
-              сделано для нас двоих
-            </motion.p>
-          </div>
-        </main>
-      )}
+      {/* ─── Footer ─── */}
+      <footer className="landing-footer">
+        <p className="footer-text">built for us</p>
+      </footer>
     </div>
   );
 }
 
-function EasterEgg() {
-  const count = 22;
+/* ─── Auth View ─── */
+
+interface AuthViewProps {
+  username: string;
+  setUsername: (v: string) => void;
+  password: string;
+  setPassword: (v: string) => void;
+  authError: string;
+  isSubmitting: boolean;
+  handleAuth: (e: React.FormEvent) => void;
+}
+
+function AuthView({ username, setUsername, password, setPassword, authError, isSubmitting, handleAuth }: AuthViewProps) {
   return (
     <motion.div
-      initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-      style={{
-        position: 'fixed', inset: 0, zIndex: 9999,
-        pointerEvents: 'none', overflow: 'hidden',
-      }}
+      initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, y: -16, filter: 'blur(4px)' }}
+      transition={{ duration: 0.6, ease: [0.22, 1, 0.36, 1] }}
+      className="auth-container"
+    >
+      {/* Hero */}
+      <div className="auth-hero">
+        <motion.div
+          className="hero-badge"
+          initial={{ opacity: 0, scale: 0.8 }}
+          animate={{ opacity: 1, scale: 1 }}
+          transition={{ delay: 0.15, duration: 0.5 }}
+        >
+          <div className="hero-badge-dot" />
+          <span>Private viewing rooms</span>
+        </motion.div>
+
+        <motion.h1
+          className="hero-title"
+          initial={{ opacity: 0, y: 12 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.2, duration: 0.6 }}
+        >
+          Watch<br />
+          <span className="hero-title-accent">together.</span>
+        </motion.h1>
+
+        <motion.p
+          className="hero-subtitle"
+          initial={{ opacity: 0, y: 8 }}
+          animate={{ opacity: 1, y: 0 }}
+          transition={{ delay: 0.35, duration: 0.5 }}
+        >
+          Sync playback, voice chat, react in real-time.<br className="hidden-mobile" />
+          One room — two screens.
+        </motion.p>
+      </div>
+
+      {/* Auth Card */}
+      <motion.div
+        className="auth-card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.45, duration: 0.5 }}
+      >
+        <form onSubmit={handleAuth} className="auth-form">
+          <div className="input-group">
+            <label className="input-label" htmlFor="auth-username">Username</label>
+            <input
+              type="text"
+              value={username}
+              onChange={e => setUsername(e.target.value)}
+              placeholder="your name"
+              className="input-field"
+              required
+              minLength={2}
+              maxLength={50}
+              autoComplete="username"
+              id="auth-username"
+            />
+          </div>
+          <div className="input-group">
+            <label className="input-label" htmlFor="auth-password">Password</label>
+            <input
+              type="password"
+              value={password}
+              onChange={e => setPassword(e.target.value)}
+              placeholder="min 4 characters"
+              className="input-field"
+              required
+              minLength={4}
+              autoComplete="current-password"
+              id="auth-password"
+            />
+          </div>
+
+          <AnimatePresence>
+            {authError && (
+              <motion.p
+                initial={{ opacity: 0, height: 0 }}
+                animate={{ opacity: 1, height: 'auto' }}
+                exit={{ opacity: 0, height: 0 }}
+                className="auth-error"
+              >
+                {authError}
+              </motion.p>
+            )}
+          </AnimatePresence>
+
+          <button
+            type="submit"
+            disabled={isSubmitting || !username.trim() || !password.trim()}
+            className="btn-glow"
+            id="auth-submit"
+          >
+            {isSubmitting ? (
+              <span className="spinner" style={{ width: 16, height: 16 }} />
+            ) : (
+              <>
+                <span>Enter</span>
+                <IconArrowRight size={15} />
+              </>
+            )}
+          </button>
+        </form>
+
+        <p className="auth-hint">New username = new account</p>
+      </motion.div>
+
+      {/* Features row */}
+      <motion.div
+        className="features-row"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.6, duration: 0.5 }}
+      >
+        <FeaturePill icon={<IconRadio size={15} />} label="Sync" detail="Real-time" />
+        <FeaturePill icon={<IconMic size={15} />} label="Voice" detail="WebRTC" />
+        <FeaturePill icon={<IconFilm size={15} />} label="Sources" detail="YT / HLS / MP4" />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── Dashboard View ─── */
+
+interface DashboardViewProps {
+  user: { id: string; username: string };
+  tab: 'create' | 'join';
+  setTab: (t: 'create' | 'join') => void;
+  roomName: string;
+  setRoomName: (v: string) => void;
+  joinCode: string;
+  setJoinCode: (v: string) => void;
+  isCreating: boolean;
+  handleCreate: (e: React.FormEvent) => void;
+  handleJoin: (e: React.FormEvent) => void;
+}
+
+function DashboardView({ user, tab, setTab, roomName, setRoomName, joinCode, setJoinCode, isCreating, handleCreate, handleJoin }: DashboardViewProps) {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24, filter: 'blur(8px)' }}
+      animate={{ opacity: 1, y: 0, filter: 'blur(0px)' }}
+      exit={{ opacity: 0, y: -16, filter: 'blur(4px)' }}
+      transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+      className="dashboard-container"
+    >
+      {/* Welcome section */}
+      <motion.div
+        className="welcome-section"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.1, duration: 0.5 }}
+      >
+        <div className="welcome-avatar">
+          <span>{user.username[0].toUpperCase()}</span>
+          <div className="avatar-ring" />
+        </div>
+        <div className="welcome-text">
+          <p className="welcome-greeting">Welcome back,</p>
+          <h2 className="welcome-name">{user.username}</h2>
+        </div>
+        <div className="welcome-status">
+          <div className="status-dot live" />
+          <span>online</span>
+        </div>
+      </motion.div>
+
+      {/* Room card */}
+      <motion.div
+        className="room-card"
+        initial={{ opacity: 0, y: 16 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.2, duration: 0.5 }}
+      >
+        {/* Tabs */}
+        <div className="room-tabs">
+          {(['create', 'join'] as const).map(t => (
+            <button
+              key={t}
+              onClick={() => setTab(t)}
+              className={`room-tab ${tab === t ? 'active' : ''}`}
+              id={`tab-${t}`}
+            >
+              {t === 'create' ? (
+                <>
+                  <IconPlus size={13} />
+                  <span>New room</span>
+                </>
+              ) : (
+                <>
+                  <IconArrowRight size={13} />
+                  <span>Join room</span>
+                </>
+              )}
+              {tab === t && (
+                <motion.div
+                  layoutId="tab-indicator"
+                  className="tab-indicator"
+                  transition={{ type: 'spring', stiffness: 380, damping: 30 }}
+                />
+              )}
+            </button>
+          ))}
+        </div>
+
+        {/* Tab content */}
+        <div className="room-tab-content">
+          <AnimatePresence mode="wait">
+            {tab === 'create' ? (
+              <motion.form
+                key="create"
+                initial={{ opacity: 0, x: -8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: 8 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleCreate}
+                className="room-form"
+              >
+                <div className="input-group">
+                  <label className="input-label" htmlFor="room-name-input">Room name</label>
+                  <input
+                    type="text"
+                    value={roomName}
+                    onChange={e => setRoomName(e.target.value)}
+                    placeholder="movie night"
+                    className="input-field"
+                    required
+                    maxLength={100}
+                    id="room-name-input"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={isCreating || !roomName.trim()}
+                  className="btn-glow"
+                  id="create-room-btn"
+                >
+                  {isCreating ? (
+                    <span className="spinner" style={{ width: 14, height: 14 }} />
+                  ) : (
+                    <>
+                      <IconPlus size={15} />
+                      <span>Create room</span>
+                    </>
+                  )}
+                </button>
+              </motion.form>
+            ) : (
+              <motion.form
+                key="join"
+                initial={{ opacity: 0, x: 8 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -8 }}
+                transition={{ duration: 0.2 }}
+                onSubmit={handleJoin}
+                className="room-form"
+              >
+                <div className="input-group">
+                  <label className="input-label" htmlFor="join-code-input">Room code</label>
+                  <input
+                    type="text"
+                    value={joinCode}
+                    onChange={e => setJoinCode(e.target.value)}
+                    placeholder="paste room code"
+                    className="input-field font-mono"
+                    required
+                    id="join-code-input"
+                  />
+                </div>
+                <button
+                  type="submit"
+                  disabled={!joinCode.trim()}
+                  className="btn-glow"
+                  id="join-room-btn"
+                >
+                  <IconArrowRight size={15} />
+                  <span>Join</span>
+                </button>
+              </motion.form>
+            )}
+          </AnimatePresence>
+        </div>
+      </motion.div>
+
+      {/* Features row */}
+      <motion.div
+        className="features-row"
+        initial={{ opacity: 0, y: 12 }}
+        animate={{ opacity: 1, y: 0 }}
+        transition={{ delay: 0.35, duration: 0.5 }}
+      >
+        <FeaturePill icon={<IconRadio size={15} />} label="Sync" detail="Real-time" />
+        <FeaturePill icon={<IconMic size={15} />} label="Voice" detail="WebRTC" />
+        <FeaturePill icon={<IconFilm size={15} />} label="Sources" detail="YT / HLS / MP4" />
+      </motion.div>
+    </motion.div>
+  );
+}
+
+/* ─── Easter Egg ─── */
+
+function EasterEgg() {
+  const HEART_COUNT = 24;
+  const SPARKLE_COUNT = 12;
+
+  return (
+    <motion.div
+      initial={{ opacity: 0 }}
+      animate={{ opacity: 1 }}
+      exit={{ opacity: 0 }}
+      transition={{ duration: 0.5 }}
+      className="ee-overlay"
     >
       {/* Falling hearts */}
-      {Array.from({ length: count }).map((_, i) => (
-        <motion.div key={i}
-          initial={{ x: `${(i / count) * 100}vw`, y: -40, opacity: 0 }}
-          animate={{ y: '110vh', opacity: [0, 1, 1, 0] }}
-          transition={{ duration: 3.5 + Math.random() * 2, delay: i * 0.1, ease: 'easeIn' }}
-          style={{ position: 'absolute', top: 0, left: 0 }}>
-          <span style={{ opacity: 0.6 + Math.random() * 0.4 }}>
-            <IconHeart
-              size={12 + Math.floor(Math.random() * 16)}
-              className="text-[var(--color-accent)]"
-            />
-          </span>
+      {Array.from({ length: HEART_COUNT }).map((_, i) => (
+        <motion.div
+          key={`heart-${i}`}
+          initial={{ y: -40, opacity: 0, rotate: -20 + Math.random() * 40 }}
+          animate={{
+            y: '110vh',
+            opacity: [0, 0.8, 0.8, 0],
+            rotate: -20 + Math.random() * 40,
+          }}
+          transition={{
+            duration: 3.5 + Math.random() * 2.5,
+            delay: i * 0.1,
+            ease: 'easeIn',
+          }}
+          style={{
+            position: 'absolute',
+            left: `${(i / HEART_COUNT) * 100}%`,
+            top: 0,
+          }}
+        >
+          <IconHeart
+            size={10 + Math.floor(Math.random() * 18)}
+            className="ee-heart-icon"
+          />
         </motion.div>
       ))}
 
-      {/* Card — perfectly centered */}
-      <motion.div
-        initial={{ opacity: 0, scale: 0.88, y: 16 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.92 }}
-        transition={{ delay: 0.25, duration: 0.55, ease: [0.25, 1, 0.5, 1] as const }}
-        style={{
-          position: 'fixed',
-          top: '50%', left: '50%',
-          transform: 'translate(-50%, -50%)',
-          width: 'min(340px, 88vw)',
-          zIndex: 10000,
-          pointerEvents: 'none',
-        }}
-      >
-        <div
-          className="surface rounded-2xl text-center"
-          style={{
-            padding: '28px 24px 24px',
-            border: '1px solid rgba(167,139,250,0.25)',
-            boxShadow: '0 32px 80px rgba(0,0,0,0.7), 0 0 0 1px rgba(0,0,0,0.3)',
+      {/* Sparkle particles */}
+      {Array.from({ length: SPARKLE_COUNT }).map((_, i) => (
+        <motion.div
+          key={`sparkle-${i}`}
+          className="ee-sparkle"
+          initial={{ opacity: 0, scale: 0 }}
+          animate={{
+            opacity: [0, 1, 0],
+            scale: [0, 1.2, 0],
           }}
-        >
-          <p className="text-[10px] uppercase tracking-[0.22em] text-[var(--color-text-4)] mb-4">жаным</p>
-          <p className="text-[2rem] font-semibold tracking-tight text-[var(--color-text-0)] mb-1">
-            Дильназ
-          </p>
-          <p className="text-sm text-[var(--color-text-2)] leading-relaxed mb-5">
-            Ты — мой мир.<br />
-            <span className="text-[var(--color-text-4)]">Смотреть с тобой — лучшее.</span>
-          </p>
-          <div className="flex justify-center gap-3">
-            <IconHeart size={16} className="text-[var(--color-accent)]" />
-            <IconHeart size={20} className="text-[var(--color-accent)]" />
-            <IconHeart size={16} className="text-[var(--color-accent)]" />
-          </div>
-          <p className="text-[10px] text-[var(--color-text-4)] mt-4 tracking-widest">forever yours</p>
+          transition={{
+            duration: 1.5,
+            delay: 0.3 + i * 0.2,
+            repeat: 2,
+            repeatDelay: 0.5,
+          }}
+          style={{
+            left: `${10 + Math.random() * 80}%`,
+            top: `${10 + Math.random() * 80}%`,
+          }}
+        />
+      ))}
+
+      {/* Center card */}
+      <motion.div
+        className="ee-card-wrapper"
+        initial={{ opacity: 0, scale: 0.85, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.9, y: 10 }}
+        transition={{ delay: 0.25, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+      >
+        <div className="ee-card">
+          <div className="ee-card-glow" />
+
+          <motion.p
+            className="ee-tag"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.5 }}
+          >
+            janym
+          </motion.p>
+
+          <motion.div
+            className="ee-heart-main"
+            initial={{ scale: 0 }}
+            animate={{ scale: 1 }}
+            transition={{ delay: 0.6, type: 'spring', stiffness: 200, damping: 12 }}
+          >
+            <motion.div
+              animate={{ scale: [1, 1.15, 1] }}
+              transition={{ duration: 1.2, repeat: Infinity, ease: 'easeInOut' }}
+            >
+              <IconHeart size={32} className="ee-heart-accent" />
+            </motion.div>
+          </motion.div>
+
+          <motion.h2
+            className="ee-name"
+            initial={{ opacity: 0, y: 8 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.7 }}
+          >
+            Dilnaz
+          </motion.h2>
+
+          <motion.p
+            className="ee-message"
+            initial={{ opacity: 0, y: 6 }}
+            animate={{ opacity: 1, y: 0 }}
+            transition={{ delay: 0.85 }}
+          >
+            You are my world.
+          </motion.p>
+
+          <motion.div
+            className="ee-hearts-row"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            transition={{ delay: 1 }}
+          >
+            <IconHeart size={10} className="ee-heart-sm" />
+            <IconHeart size={14} className="ee-heart-sm" />
+            <IconHeart size={10} className="ee-heart-sm" />
+          </motion.div>
+
+          <motion.p
+            className="ee-footer"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 0.5 }}
+            transition={{ delay: 1.1 }}
+          >
+            forever yours
+          </motion.p>
         </div>
       </motion.div>
     </motion.div>

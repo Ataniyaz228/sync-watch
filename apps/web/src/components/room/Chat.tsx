@@ -133,7 +133,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
                   onChange={(e) => setGifSearch(e.target.value)}
                   placeholder="Search GIFs..."
                   autoComplete="off"
-                  className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 rounded-lg py-2 pl-3 pr-8 text-[13px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
+                  className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
                 />
                 {gifLoading && (
                   <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
@@ -149,13 +149,13 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
             {/* GIF Grid */}
             <div className="flex-1 overflow-y-auto p-2 min-h-0">
               {gifResults.length > 0 ? (
-                <div className="columns-2 gap-1.5 [column-fill:auto]">
+                <div className="grid grid-cols-2 gap-1.5">
                   {gifResults.map((gif) => (
                     <button key={gif.id} onClick={() => sendGif(gif.url)}
-                      className="w-full mb-1.5 rounded-lg overflow-hidden bg-[var(--color-bg-3)] block break-inside-avoid border border-transparent hover:border-[#D4A06A]/60 transition-all group">
+                      className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[#D4A06A]/60 transition-all group aspect-square">
                       {/* eslint-disable-next-line @next/next/no-img-element */}
                       <img src={gif.preview || gif.url} alt={gif.title} loading="lazy"
-                        className="w-full h-auto object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
                     </button>
                   ))}
                 </div>

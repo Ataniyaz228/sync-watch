@@ -259,7 +259,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </div>
 
       {/* ─── Unified Chat Sidebar (Desktop & Mobile) ─── */}
-      <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[320px] xl:w-[380px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
+      <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
         <div className="p-3 sm:p-4 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between">
           <div className="flex items-center gap-2">
             <h2 className="text-[14px] font-semibold text-[var(--color-text-0)] tracking-tight">Room Chat</h2>

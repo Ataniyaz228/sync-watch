@@ -111,13 +111,13 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
       <form onSubmit={handleSubmit} className="px-3 py-3 border-t border-[var(--color-border)] flex-shrink-0 safe-bottom bg-[var(--color-bg-1)] relative z-20">
         <div className="relative flex items-center">
           <button type="button" onClick={() => setShowGifPicker(!showGifPicker)}
-            className={`absolute left-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${showGifPicker ? 'bg-[#D4A06A]/20 text-[#D4A06A]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-1)]'}`} title="GIFs">
-            <span className="text-[9px] font-black uppercase tracking-tighter">GIF</span>
+            className={`absolute left-2 w-9 h-9 rounded-full flex items-center justify-center transition-all ${showGifPicker ? 'bg-[#D4A06A]/20 text-[#D4A06A]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-1)]'}`} title="GIFs">
+            <span className="text-[10px] font-black uppercase tracking-tighter">GIF</span>
           </button>
           <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..." className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 focus:shadow-[0_0_15px_rgba(212,160,106,0.1)] rounded-full py-2.5 pl-[42px] pr-12 text-[13px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none" maxLength={500} id="chat-input" />
-          <button type="submit" disabled={!input.trim()} className={`absolute right-1.5 w-8 h-8 rounded-full flex items-center justify-center transition-all ${input.trim() ? 'bg-[#D4A06A] text-black shadow-[0_0_10px_rgba(212,160,106,0.4)] hover:scale-105' : 'bg-[var(--color-bg-3)] text-[var(--color-text-4)]'}`} id="chat-send-btn">
-            <IconSend size={13} className={input.trim() ? 'translate-x-[-1px]' : ''} />
+            placeholder="Type a message..." autoComplete="off" className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 focus:shadow-[0_0_15px_rgba(212,160,106,0.1)] rounded-full py-3.5 pl-[48px] pr-14 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none" maxLength={500} id="chat-input" />
+          <button type="submit" disabled={!input.trim()} className={`absolute right-1.5 w-10 h-10 rounded-full flex items-center justify-center transition-all ${input.trim() ? 'bg-[#D4A06A] text-black shadow-[0_0_10px_rgba(212,160,106,0.4)] hover:scale-105' : 'bg-[var(--color-bg-3)] text-[var(--color-text-4)]'}`} id="chat-send-btn">
+            <IconSend size={15} className={input.trim() ? 'translate-x-[-1px]' : ''} />
           </button>
         </div>
       </form>

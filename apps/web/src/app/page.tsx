@@ -91,7 +91,7 @@ export default function HomePage() {
       <AnimatePresence>{showEE && <EasterEgg />}</AnimatePresence>
 
       {/* ── Nav ── */}
-      <nav className="px-6 py-5 flex items-center justify-between">
+      <nav className="sticky top-0 z-20 px-5 py-4 flex items-center justify-between border-b border-[var(--color-border)] bg-[var(--color-bg-0)]" style={{ backdropFilter: 'blur(12px)' }}>
         <button onClick={handleLogoClick} className="flex items-center gap-2.5 bg-transparent border-none cursor-pointer">
           <div className="w-8 h-8 rounded-lg surface-raised flex items-center justify-center">
             <IconPlay size={14} className="text-[var(--color-text-2)]" />
@@ -163,7 +163,7 @@ export default function HomePage() {
           </motion.div>
         </main>
       ) : (
-        <main className="flex-1 flex flex-col px-5 pb-16 pt-4">
+        <main className="flex-1 flex flex-col items-center justify-center px-5 py-8">
           <div className="max-w-[420px] mx-auto w-full space-y-3">
 
             {/* Welcome */}

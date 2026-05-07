@@ -117,8 +117,12 @@ export default function HomePage() {
         body: JSON.stringify({ name: roomName.trim(), userId: user?.id }),
       });
       router.push(`/room/${room.slug}`);
-    } catch { /* handled */ }
-    finally { setIsCreating(false); }
+    } catch (err) {
+      console.error('Room creation failed:', err);
+      alert('Failed to create room: ' + (err instanceof Error ? err.message : String(err)));
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   const handleJoin = (e: React.FormEvent) => {
@@ -601,14 +605,14 @@ function EasterEgg() {
       ))}
 
       {/* Center card */}
-      <motion.div
-        className="ee-card-wrapper"
-        initial={{ opacity: 0, scale: 0.85, y: 20 }}
-        animate={{ opacity: 1, scale: 1, y: 0 }}
-        exit={{ opacity: 0, scale: 0.9, y: 10 }}
-        transition={{ delay: 0.25, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
-      >
-        <div className="ee-card">
+      <div className="ee-card-wrapper" style={{ position: 'fixed', top: '50%', left: '50%', width: 'min(340px, 88vw)', zIndex: 10000, pointerEvents: 'none', transform: 'translate(-50%, -50%)' }}>
+        <motion.div
+          initial={{ opacity: 0, scale: 0.85, y: 20 }}
+          animate={{ opacity: 1, scale: 1, y: 0 }}
+          exit={{ opacity: 0, scale: 0.9, y: 10 }}
+          transition={{ delay: 0.25, duration: 0.7, ease: [0.22, 1, 0.36, 1] }}
+          className="ee-card"
+        >
           <div className="ee-card-glow" />
 
           <motion.p
@@ -671,8 +675,8 @@ function EasterEgg() {
           >
             forever yours
           </motion.p>
-        </div>
-      </motion.div>
+        </motion.div>
+      </div>
     </motion.div>
   );
 }

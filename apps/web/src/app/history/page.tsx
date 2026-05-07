@@ -32,6 +32,25 @@ function timeAgo(iso: string): string {
   return `${Math.floor(h / 24)}d ago`;
 }
 
+function FloatingOrbs() {
+  return (
+    <div className="orbs-container">
+      <div className="orb orb-1" />
+      <div className="orb orb-2" />
+      <div className="orb orb-3" />
+    </div>
+  );
+}
+
+function GridBackground() {
+  return (
+    <div className="grid-bg">
+      <div className="grid-lines" />
+      <div className="grid-fade" />
+    </div>
+  );
+}
+
 export default function HistoryPage() {
   const router = useRouter();
   const { user, isLoading: authLoading } = useAuth();
@@ -52,76 +71,89 @@ export default function HistoryPage() {
 
   if (authLoading || loading) {
     return (
-      <div className="min-h-dvh flex items-center justify-center">
-        <div className="spinner" style={{ width: 20, height: 20 }} />
+      <div className="landing-loader">
+        <div className="loader-ring">
+          <div className="loader-ring-inner" />
+        </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-dvh flex flex-col px-5 sm:px-8 pb-12">
+    <div className="min-h-dvh flex flex-col px-5 sm:px-8 pb-16 relative overflow-hidden">
+      <FloatingOrbs />
+      <GridBackground />
       <div className="bg-noise" />
 
       <motion.div
-        initial={{ opacity: 0, y: 10 }}
+        initial={{ opacity: 0, y: 16 }}
         animate={{ opacity: 1, y: 0 }}
-        transition={{ duration: 0.35 }}
-        className="max-w-lg mx-auto w-full pt-8"
+        transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+        className="max-w-2xl mx-auto w-full pt-12 sm:pt-20 relative z-10"
       >
-        {/* Back */}
+        {/* Back Button */}
         <button
           onClick={() => router.push('/')}
-          className="flex items-center gap-2 text-[11px] text-[var(--color-text-4)] hover:text-[var(--color-text-2)] transition-colors mb-6"
+          className="flex items-center gap-2 text-[13px] font-medium text-[var(--color-text-4)] hover:text-[var(--color-text-0)] transition-colors mb-8 sm:mb-10 group bg-transparent border-none cursor-pointer"
         >
-          <IconArrowRight size={11} className="rotate-180" />
-          <span>Back</span>
+          <IconArrowRight size={13} className="rotate-180 transform group-hover:-translate-x-1 transition-transform" />
+          <span>Back to Home</span>
         </button>
 
-        {/* Header */}
-        <div className="flex items-center gap-3 mb-6">
-          <div className="w-8 h-8 surface-raised rounded-lg flex items-center justify-center">
-            <IconHistory size={15} className="text-[var(--color-text-3)]" />
+        {/* Header Section */}
+        <div className="flex items-center gap-4 mb-8 sm:mb-12">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[#c4885a] shadow-[0_0_24px_rgba(212,160,106,0.3)]">
+            <IconHistory size={24} className="text-[var(--color-bg-0)]" />
           </div>
           <div>
-            <h1 className="text-base font-semibold text-[var(--color-text-0)] tracking-[-0.02em]">
-              Watch history
+            <h1 className="text-2xl sm:text-3xl font-bold text-[var(--color-text-0)] tracking-tight leading-tight">
+              Watch History
             </h1>
-            <p className="text-[10px] text-[var(--color-text-4)]">{user?.username}</p>
+            <p className="text-[14px] text-[var(--color-text-3)] mt-1">
+              Rooms you've joined as <span className="text-[var(--color-text-1)] font-medium">{user?.username}</span>
+            </p>
           </div>
         </div>
 
-        {/* List */}
+        {/* History List */}
         {history.length === 0 ? (
-          <div className="surface rounded-xl p-8 text-center">
-            <IconFilm size={24} className="text-[var(--color-text-4)] mx-auto mb-3" />
-            <p className="text-[13px] text-[var(--color-text-2)]">Nothing watched yet</p>
-            <p className="text-[11px] text-[var(--color-text-4)] mt-1">Videos will appear here after you watch something.</p>
+          <div className="auth-card text-center p-10 sm:p-14 border border-[var(--color-border)] border-dashed">
+            <div className="w-16 h-16 rounded-2xl surface flex items-center justify-center mx-auto mb-5 border border-[var(--color-border)] shadow-lg">
+              <IconFilm size={32} className="text-[var(--color-text-4)]" />
+            </div>
+            <h2 className="text-lg font-semibold text-[var(--color-text-1)] mb-2">Nothing watched yet</h2>
+            <p className="text-[14px] text-[var(--color-text-4)]">Your watch history will appear here once you start watching videos with someone.</p>
           </div>
         ) : (
-          <div className="space-y-1.5">
+          <div className="space-y-3 sm:space-y-4">
             <AnimatePresence>
               {history.map((item, i) => (
                 <motion.button
                   key={item.id}
-                  initial={{ opacity: 0, y: 6 }}
+                  initial={{ opacity: 0, y: 10 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: i * 0.03 }}
+                  transition={{ delay: i * 0.05, duration: 0.4 }}
                   onClick={() => router.push(`/room/${item.roomSlug}`)}
-                  className="w-full text-left surface rounded-xl p-4 flex items-start gap-3 hover:bg-[var(--color-bg-2)] transition-colors cursor-pointer border-none"
+                  className="w-full text-left auth-card p-5 sm:p-6 flex items-start sm:items-center gap-4 sm:gap-6 hover:border-[var(--color-border-hover)] hover:shadow-[0_8px_30px_rgba(0,0,0,0.5)] transition-all cursor-pointer group"
                 >
-                  <div className="w-7 h-7 surface-raised rounded-md flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <IconPlay size={11} className="text-[var(--color-text-3)]" />
+                  <div className="w-10 h-10 rounded-lg surface-raised flex items-center justify-center flex-shrink-0 border border-[var(--color-border)] group-hover:border-[var(--color-accent-muted)] group-hover:bg-[var(--color-accent-dim)] transition-colors mt-1 sm:mt-0">
+                    <IconPlay size={16} className="text-[var(--color-text-3)] group-hover:text-[var(--color-accent)] transition-colors" />
                   </div>
                   <div className="min-w-0 flex-1">
-                    <p className="text-[13px] text-[var(--color-text-0)] font-medium truncate leading-snug">
+                    <h3 className="text-[15px] sm:text-[16px] text-[var(--color-text-0)] font-semibold truncate leading-snug mb-1 group-hover:text-[var(--color-accent)] transition-colors">
                       {item.title || item.url}
-                    </p>
-                    <div className="flex items-center gap-2 mt-1.5 flex-wrap">
-                      <span className="text-[9px] px-1.5 py-0.5 rounded surface-raised text-[var(--color-text-4)] uppercase tracking-[0.05em]">
+                    </h3>
+                    <div className="flex flex-wrap items-center gap-3 sm:gap-4 mt-2">
+                      <span className="text-[11px] font-semibold px-2 py-1 rounded bg-[var(--color-bg-3)] border border-[var(--color-border)] text-[var(--color-text-2)] uppercase tracking-wider">
                         {TYPE_LABELS[item.videoType] || item.videoType}
                       </span>
-                      <span className="text-[10px] text-[var(--color-text-4)]">{item.roomName}</span>
-                      <span className="text-[10px] text-[var(--color-text-4)] ml-auto">{timeAgo(item.createdAt)}</span>
+                      <span className="text-[13px] text-[var(--color-text-3)] flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full bg-[var(--color-text-4)]" />
+                        {item.roomName}
+                      </span>
+                      <span className="text-[13px] text-[var(--color-text-4)] ml-auto font-medium">
+                        {timeAgo(item.createdAt)}
+                      </span>
                     </div>
                   </div>
                 </motion.button>

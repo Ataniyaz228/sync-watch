@@ -1086,8 +1086,8 @@ body {
 }
 
 .ee-heart-icon {
-  color: var(--color-accent);
-  filter: drop-shadow(0 0 6px rgba(212, 160, 106, 0.4));
+  color: #ec4899;
+  filter: drop-shadow(0 0 6px rgba(236, 72, 153, 0.4));
 }
 
 .ee-sparkle {
@@ -1095,18 +1095,12 @@ body {
   width: 4px;
   height: 4px;
   border-radius: 50%;
-  background: var(--color-accent);
-  box-shadow: 0 0 8px var(--color-accent), 0 0 16px rgba(212, 160, 106, 0.3);
+  background: #ec4899;
+  box-shadow: 0 0 8px #ec4899, 0 0 16px rgba(236, 72, 153, 0.3);
 }
 
 .ee-card-wrapper {
-  position: fixed;
-  top: 50%;
-  left: 50%;
-  transform: translate(-50%, -50%);
-  width: min(340px, 88vw);
-  z-index: 10000;
-  pointer-events: none;
+  /* Moved to inline style to avoid Framer Motion conflict */
 }
 
 .ee-card {
@@ -1114,15 +1108,15 @@ body {
   background: rgba(17, 17, 19, 0.9);
   backdrop-filter: blur(30px);
   -webkit-backdrop-filter: blur(30px);
-  border: 1px solid rgba(212, 160, 106, 0.15);
+  border: 1px solid rgba(236, 72, 153, 0.15);
   border-radius: 20px;
   padding: 36px 28px 28px;
   text-align: center;
   overflow: hidden;
   box-shadow:
-    0 0 0 1px rgba(212, 160, 106, 0.05) inset,
+    0 0 0 1px rgba(236, 72, 153, 0.05) inset,
     0 40px 80px rgba(0, 0, 0, 0.7),
-    0 0 60px rgba(212, 160, 106, 0.08);
+    0 0 60px rgba(236, 72, 153, 0.08);
 }
 
 .ee-card-glow {
@@ -1132,7 +1126,7 @@ body {
   transform: translateX(-50%);
   width: 200%;
   height: 100%;
-  background: radial-gradient(ellipse at center, rgba(212, 160, 106, 0.08) 0%, transparent 70%);
+  background: radial-gradient(ellipse at center, rgba(236, 72, 153, 0.12) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -1149,8 +1143,8 @@ body {
 }
 
 .ee-heart-accent {
-  color: var(--color-accent);
-  filter: drop-shadow(0 0 12px rgba(212, 160, 106, 0.5));
+  color: #ec4899;
+  filter: drop-shadow(0 0 12px rgba(236, 72, 153, 0.5));
 }
 
 .ee-name {
@@ -1159,7 +1153,7 @@ body {
   letter-spacing: -0.04em;
   color: var(--color-text-0);
   margin-bottom: 6px;
-  background: linear-gradient(135deg, var(--color-text-0) 0%, var(--color-accent) 100%);
+  background: linear-gradient(135deg, var(--color-text-0) 0%, #ec4899 100%);
   -webkit-background-clip: text;
   -webkit-text-fill-color: transparent;
   background-clip: text;
@@ -1180,7 +1174,7 @@ body {
 }
 
 .ee-heart-sm {
-  color: var(--color-accent);
+  color: #ec4899;
   opacity: 0.7;
   animation: ee-heart-float 2s ease-in-out infinite;
 }

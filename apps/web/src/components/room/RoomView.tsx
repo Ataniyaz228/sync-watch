@@ -1,0 +1,184 @@
+'use client';
+
+import { useState, useRef, useCallback, useEffect } from 'react';
+import { motion } from 'framer-motion';
+import { useSocket } from '@/hooks/useSocket';
+import { useChat } from '@/hooks/useChat';
+import { useVideoSync, type VideoPlayerAPI } from '@/hooks/useVideoSync';
+import { useVoiceCall } from '@/hooks/useVoiceCall';
+import VideoPlayer from './VideoPlayer';
+import UrlInput from './UrlInput';
+import Chat from './Chat';
+import type { VideoResolution, VideoType, RoomState } from '@/types';
+import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume } from '@/components/ui/Icons';
+
+interface RoomViewProps {
+  roomSlug: string;
+  roomName: string;
+  userId: string;
+  username: string;
+}
+
+export default function RoomView({ roomSlug, roomName, userId, username }: RoomViewProps) {
+  const [videoType, setVideoType] = useState<VideoType | null>(null);
+  const [videoUrl, setVideoUrl] = useState('');
+  const [videoTitle, setVideoTitle] = useState('');
+  const [users, setUsers] = useState<string[]>([]);
+  const [usersCount, setUsersCount] = useState(0);
+  const [copied, setCopied] = useState(false);
+  const [chatOpen, setChatOpen] = useState(false);
+
+  const playerRef = useRef<VideoPlayerAPI | null>(null);
+  const { emit, on } = useSocket(roomSlug, username, userId);
+  const getPlayer = useCallback(() => playerRef.current, []);
+
+  const { onLocalPlay, onLocalPause, onLocalSeek } = useVideoSync({
+    on, emit: emit as (event: string, data: unknown) => void,
+    roomSlug, getPlayer,
+  });
+
+  const { messages, sendMessage, reactToMessage, messagesEndRef } = useChat({
+    on, emit: emit as (event: string, data: unknown) => void, roomSlug,
+  });
+
+  const { isInCall, isMuted, peerConnected, joinCall, leaveCall, toggleMute } = useVoiceCall({
+    on, emit: emit as (event: string, data: unknown) => void, roomSlug, userId,
+  });
+
+  useEffect(() => {
+    const u1 = on('room:user-joined', (d) => { setUsersCount(d.usersCount); setUsers(d.users); });
+    const u2 = on('room:user-left', (d) => { setUsersCount(d.usersCount); setUsers(p => p.filter(u => u !== d.username)); });
+    return () => { u1(); u2(); };
+  }, [on]);
+
+  useEffect(() => {
+    const u = on('video:url-changed', (d) => { setVideoType(d.type); setVideoUrl(d.resolvedUrl); setVideoTitle(d.title || ''); });
+    return u;
+  }, [on]);
+
+  useEffect(() => {
+    const u = on('video:sync-state', (s: RoomState) => {
+      if (s.type && s.resolvedUrl) { setVideoType(s.type); setVideoUrl(s.resolvedUrl); setVideoTitle(s.title || ''); }
+    });
+    return u;
+  }, [on]);
+
+  const handleVideoResolved = useCallback((r: VideoResolution) => {
+    setVideoType(r.type); setVideoUrl(r.resolvedUrl); setVideoTitle(r.title || '');
+    emit('video:url-change', { roomSlug, ...r });
+  }, [emit, roomSlug]);
+
+  const copyLink = useCallback(() => {
+    navigator.clipboard.writeText(`${window.location.origin}/room/${roomSlug}`).then(() => {
+      setCopied(true); setTimeout(() => setCopied(false), 2000);
+    });
+  }, [roomSlug]);
+
+  return (
+    <div className="room-grid">
+      <div className="bg-noise" />
+
+      {/* ═══ Header ═══ */}
+      <header className="room-header border-b border-[var(--color-border)] bg-[var(--color-bg-1)] px-4 py-2.5 flex items-center justify-between gap-3 z-10">
+        <div className="flex items-center gap-3 min-w-0">
+          <a href="/" className="flex items-center gap-2 flex-shrink-0">
+            <div className="w-8 h-8 rounded-md surface-raised flex items-center justify-center">
+              <IconPlay size={14} className="text-[var(--color-text-3)]" />
+            </div>
+          </a>
+          <div className="h-5 w-px bg-[var(--color-border)]" />
+          <div className="min-w-0">
+            <h1 className="text-sm font-semibold text-[var(--color-text-0)] truncate">{roomName}</h1>
+            <p className="text-[10px] text-[var(--color-text-4)] font-mono truncate">{roomSlug}</p>
+          </div>
+        </div>
+
+        <div className="flex items-center gap-1.5">
+          {/* Users */}
+          <div className="flex items-center gap-1.5 px-2 py-1.5 rounded-md surface-raised text-[var(--color-text-3)]">
+            <div className="status-dot live" />
+            <IconUsers size={13} />
+            <span className="text-[11px] font-mono">{usersCount}</span>
+          </div>
+
+          {/* Voice call */}
+          {isInCall ? (
+            <div className="flex items-center gap-1">
+              <button onClick={toggleMute} className={`btn-icon ${isMuted ? '' : 'active'}`}
+                title={isMuted ? 'Unmute' : 'Mute'}>
+                {isMuted ? <IconX size={14} /> : <IconMic size={14} />}
+              </button>
+              {peerConnected && (
+                <div className="flex items-center gap-1 px-2 py-1.5 rounded-md text-[var(--color-success)]">
+                  <IconVolume size={12} />
+                  <span className="text-[10px]">Live</span>
+                </div>
+              )}
+              <button onClick={leaveCall} className="btn-icon" style={{ borderColor: 'var(--color-error)', color: 'var(--color-error)' }}
+                title="End call">
+                <IconX size={14} />
+              </button>
+            </div>
+          ) : (
+            <button onClick={joinCall} className="btn-icon" title="Join voice">
+              <IconMic size={14} />
+            </button>
+          )}
+
+          {/* Copy link */}
+          <button onClick={copyLink} className="btn-icon" title="Copy link" id="copy-link-btn">
+            {copied ? <IconCheck size={14} className="text-[var(--color-success)]" /> : <IconLink size={14} />}
+          </button>
+
+          {/* Mobile chat toggle */}
+          <button onClick={() => setChatOpen(!chatOpen)}
+            className={`btn-icon lg:hidden relative ${chatOpen ? 'active' : ''}`} id="toggle-chat-btn">
+            <IconChat size={14} />
+            {messages.length > 0 && !chatOpen && (
+              <div className="absolute -top-1 -right-1 w-2 h-2 rounded-full bg-[var(--color-accent)]" />
+            )}
+          </button>
+        </div>
+      </header>
+
+      {/* ═══ Video Section ═══ */}
+      <div className="flex flex-col p-3 gap-3 min-h-0 overflow-y-auto">
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25 }}
+          className="surface rounded-xl p-2.5 flex-shrink-0">
+          <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
+            onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek} playerRef={playerRef} />
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }} transition={{ duration: 0.25, delay: 0.05 }}
+          className="surface rounded-xl p-3 flex-shrink-0">
+          <UrlInput onVideoResolved={handleVideoResolved} />
+        </motion.div>
+
+        {/* Viewers — desktop */}
+        {users.length > 0 && (
+          <div className="hidden lg:flex items-center gap-1.5 px-1 flex-shrink-0">
+            <span className="text-[10px] text-[var(--color-text-4)] uppercase tracking-wider mr-1">Viewers</span>
+            {users.map((u, i) => (
+              <span key={u + i} className="text-[11px] text-[var(--color-text-3)] px-2 py-0.5 rounded-md surface-raised">{u}</span>
+            ))}
+          </div>
+        )}
+
+        {/* Mobile chat */}
+        {chatOpen && (
+          <motion.div initial={{ opacity: 0, y: 8 }} animate={{ opacity: 1, y: 0 }}
+            className="surface rounded-xl min-h-[300px] max-h-[400px] flex flex-col lg:hidden overflow-hidden flex-shrink-0">
+            <Chat messages={messages} onSendMessage={sendMessage}
+              onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
+          </motion.div>
+        )}
+      </div>
+
+      {/* ═══ Chat Sidebar — Desktop ═══ */}
+      <div className="hidden lg:flex flex-col border-l border-[var(--color-border)] bg-[var(--color-bg-1)] min-h-0 overflow-hidden">
+        <Chat messages={messages} onSendMessage={sendMessage}
+          onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,13 @@
+{
+  "version": "7",
+  "dialect": "postgresql",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "7",
+      "when": 1778135467973,
+      "tag": "0000_talented_katie_power",
+      "breakpoints": true
+    }
+  ]
+}

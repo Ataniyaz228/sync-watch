@@ -46,7 +46,7 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
             {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
             {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
             {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-            {type === 'iframe' && <IframePlayer ref={setRef} src={url} />}
+            {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
           </motion.div>
         </AnimatePresence>
       </div>

@@ -367,7 +367,15 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         {/* Video Player Container */}
         <div className="flex-1 relative flex items-center justify-center pt-20 pb-4 px-0 sm:px-4">
           <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
-            <VideoPlayer type={videoType} url={videoUrl} title={videoTitle} onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek} playerRef={playerRef} />
+            <VideoPlayer
+              type={videoType}
+              url={videoUrl}
+              title={videoTitle}
+              onPlay={onLocalPlay}
+              onPause={onLocalPause}
+              onSeeked={onLocalSeek}
+              playerRef={playerRef}
+            />
             
             {/* Empty State */}
             {!videoUrl && (

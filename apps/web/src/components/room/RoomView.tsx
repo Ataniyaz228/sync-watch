@@ -146,7 +146,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </AnimatePresence>
 
       {/* ─── Main Content (Video Area) ─── */}
-      <div className="flex-1 flex flex-col min-w-0 bg-[#000]">
+      <div className="relative flex-1 flex flex-col min-w-0 bg-[#000]">
         
         {/* Top Control Bar */}
         <header className="absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-12 px-4 sm:px-6 flex items-start justify-between pointer-events-none">

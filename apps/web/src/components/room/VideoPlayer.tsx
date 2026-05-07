@@ -29,19 +29,7 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
   }, [playerRef]);
 
   if (!type || !url) {
-    return (
-      <div className="video-container">
-        <div className="flex flex-col items-center justify-center gap-3 text-center p-8">
-          <div className="w-14 h-14 rounded-xl surface-raised flex items-center justify-center">
-            <IconPlay size={24} className="text-[var(--color-text-4)]" />
-          </div>
-          <div>
-            <p className="text-[var(--color-text-2)] text-sm font-medium">No video loaded</p>
-            <p className="text-[var(--color-text-4)] text-xs mt-0.5">Paste a URL below to start</p>
-          </div>
-        </div>
-      </div>
-    );
+    return null;
   }
 
   return (

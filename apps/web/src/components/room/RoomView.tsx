@@ -146,7 +146,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </AnimatePresence>
 
       {/* ─── Main Content (Video Area) ─── */}
-      <div className="relative flex-1 flex flex-col min-w-0 bg-[#000]">
+      <div className="relative flex-1 flex flex-col min-w-0 min-h-0 bg-[#000]">
         
         {/* Top Control Bar */}
         <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-12 px-4 sm:px-6 flex items-start justify-between pointer-events-none">
@@ -250,7 +250,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         
         {/* Mobile controls row for host (if they need to change video) */}
         {isHost && (
-          <div className="sm:hidden px-4 pb-4 flex justify-center">
+          <div className="sm:hidden px-4 pb-4 flex justify-center flex-shrink-0">
              <button onClick={() => setShowUrlModal(true)} className="w-full h-12 rounded-xl bg-white/10 text-white font-medium text-[13px] flex items-center justify-center gap-2 hover:bg-white/20 transition-colors">
                 <IconPlus size={16} /> Change Video
              </button>
@@ -258,39 +258,21 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         )}
       </div>
 
-      {/* ─── Chat Sidebar (Desktop) ─── */}
-      <div className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[var(--color-bg-1)] border-l border-[var(--color-border)] z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
-        <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between">
-          <h2 className="text-[14px] font-semibold text-[var(--color-text-0)] tracking-tight">Room Chat</h2>
-          <span className="text-[10px] text-[var(--color-text-4)] font-mono">{messages.length} messages</span>
+      {/* ─── Unified Chat Sidebar (Desktop & Mobile) ─── */}
+      <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[320px] xl:w-[380px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
+        <div className="p-3 sm:p-4 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between">
+          <div className="flex items-center gap-2">
+            <h2 className="text-[14px] font-semibold text-[var(--color-text-0)] tracking-tight">Room Chat</h2>
+            <span className="text-[10px] text-[var(--color-text-4)] font-mono">{messages.length} messages</span>
+          </div>
+          <button onClick={() => setChatOpen(false)} className="lg:hidden w-8 h-8 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors">
+            <IconX size={14} />
+          </button>
         </div>
         <div className="flex-1 overflow-hidden relative">
           <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
         </div>
       </div>
-
-      {/* ─── Chat Sheet (Mobile) ─── */}
-      <AnimatePresence>
-        {chatOpen && (
-          <>
-            <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} onClick={() => setChatOpen(false)} className="fixed inset-0 bg-black/60 backdrop-blur-sm z-50 lg:hidden" />
-            <motion.div initial={{ y: '100%' }} animate={{ y: 0 }} exit={{ y: '100%' }} transition={{ type: 'spring', damping: 25, stiffness: 300 }} className="fixed inset-x-0 bottom-0 h-[75dvh] bg-[var(--color-bg-1)] border-t border-[var(--color-border)] rounded-t-3xl z-50 flex flex-col lg:hidden overflow-hidden shadow-[0_-20px_40px_rgba(0,0,0,0.5)]">
-              <div className="flex justify-center pt-3 pb-2">
-                <div className="w-12 h-1.5 rounded-full bg-[var(--color-border-hover)]" />
-              </div>
-              <div className="px-5 py-2 flex items-center justify-between border-b border-[var(--color-border)]">
-                <h2 className="text-[15px] font-semibold text-[var(--color-text-0)]">Room Chat</h2>
-                <button onClick={() => setChatOpen(false)} className="w-8 h-8 flex items-center justify-center rounded-full surface-raised text-[var(--color-text-3)]">
-                  <IconX size={14} />
-                </button>
-              </div>
-              <div className="flex-1 overflow-hidden relative bg-[var(--color-bg-0)]">
-                <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
-              </div>
-            </motion.div>
-          </>
-        )}
-      </AnimatePresence>
       
     </div>
   );

@@ -30,13 +30,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
   };
 
   return (
-    <div className="flex flex-col h-full">
-      {/* Header */}
-      <div className="px-4 py-3 border-b border-[var(--color-border)] flex items-center gap-2 flex-shrink-0">
-        <IconSmile size={15} className="text-[var(--color-text-3)]" />
-        <span className="text-xs font-semibold text-[var(--color-text-1)] uppercase tracking-wider">Chat</span>
-        <span className="text-[10px] text-[var(--color-text-4)] ml-auto font-mono">{messages.length}</span>
-      </div>
+    <div className="flex flex-col h-full bg-[var(--color-bg-0)]">
 
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 min-h-0">

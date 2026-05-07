@@ -149,7 +149,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       <div className="relative flex-1 flex flex-col min-w-0 bg-[#000]">
         
         {/* Top Control Bar */}
-        <header className="absolute top-0 left-0 right-0 z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-12 px-4 sm:px-6 flex items-start justify-between pointer-events-none">
+        <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-12 px-4 sm:px-6 flex items-start justify-between pointer-events-none">
           
           <div className="flex flex-col gap-2 pointer-events-auto">
             <div className="flex items-center gap-3">
@@ -259,9 +259,10 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </div>
 
       {/* ─── Chat Sidebar (Desktop) ─── */}
-      <div className="hidden lg:flex flex-col w-[320px] xl:w-[380px] bg-[var(--color-bg-1)] border-l border-[var(--color-border)] z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
-        <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md">
+      <div className="hidden lg:flex flex-col w-[320px] xl:w-[380px] shrink-0 bg-[var(--color-bg-1)] border-l border-[var(--color-border)] z-20 shadow-[-10px_0_30px_rgba(0,0,0,0.5)]">
+        <div className="p-4 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between">
           <h2 className="text-[14px] font-semibold text-[var(--color-text-0)] tracking-tight">Room Chat</h2>
+          <span className="text-[10px] text-[var(--color-text-4)] font-mono">{messages.length} messages</span>
         </div>
         <div className="flex-1 overflow-hidden relative">
           <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />

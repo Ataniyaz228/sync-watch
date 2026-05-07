@@ -9,18 +9,18 @@ import { IconSend, IconSmile, IconPlus } from '@/components/ui/Icons';
 const REACTION_EMOJIS = ['❤️', '😂', '😮', '🔥', '👍', '😢'];
 
 const CURATED_GIFS = [
-  'https://media.tenor.com/2cehC2w2YToAAAAM/popcorn-eating.gif',
-  'https://media.tenor.com/Z1B84N76k0QAAAAM/laughing-meme.gif',
-  'https://media.tenor.com/Y3B1GXXr2WMAAAAM/mind-blown-explosion.gif',
-  'https://media.tenor.com/1GvKk_Y8hU0AAAAM/sad-crying.gif',
-  'https://media.tenor.com/5Oq595c51R8AAAAM/shocked-surprised.gif',
-  'https://media.tenor.com/1_8w02q3gMAAAAAM/yes-nod.gif',
-  'https://media.tenor.com/00lO0k94ZkQAAAAM/no-nope.gif',
-  'https://media.tenor.com/x8v1oNUOmg4AAAAM/rickroll-roll.gif',
-  'https://media.tenor.com/bL6tI4p1b_IAAAAM/facepalm-picard.gif',
-  'https://media.tenor.com/3Zib4pXh6vAAAAAM/dancing-cat.gif',
-  'https://media.tenor.com/B9B1z2kH4A4AAAAM/this-is-fine-fire.gif',
-  'https://media.tenor.com/m2i2vS4UfE8AAAAM/sus-rock.gif'
+  'https://media.giphy.com/media/NipFetnQOuKhW/giphy.gif',           // popcorn
+  'https://media.giphy.com/media/10JhviFuU2gWD6/giphy.gif',          // laughing
+  'https://media.giphy.com/media/xT0xeJpnrWC3XWblEk/giphy.gif',     // mind blown
+  'https://media.giphy.com/media/d2lcHJTG5Tscg/giphy.gif',           // crying
+  'https://media.giphy.com/media/l0MYEqEzwMWFCg8rm/giphy.gif',       // shocked
+  'https://media.giphy.com/media/3oEdv6sy3ulljPMGdy/giphy.gif',      // thumbs up
+  'https://media.giphy.com/media/JYZ397GsFrFtu/giphy.gif',            // no nope
+  'https://media.giphy.com/media/Vuw9m5wXviFIQ/giphy.gif',            // rickroll
+  'https://media.giphy.com/media/XsUtdIeJ0MWMo/giphy.gif',            // facepalm
+  'https://media.giphy.com/media/GeimqsH0TLDt4tScGw/giphy.gif',      // dancing cat
+  'https://media.giphy.com/media/QMHoU66sBXqqLqYvGO/giphy.gif',      // this is fine
+  'https://media.giphy.com/media/l3q2K5jinAlChoCLS/giphy.gif',        // wow
 ];
 
 interface ChatProps {
@@ -143,7 +143,9 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
     return a;
   }, {} as Record<string, ChatReaction[]>);
 
-  const isGif = msg.content.startsWith('https://') && msg.content.endsWith('.gif');
+  const isGif = /^https?:\/\/.*\.(gif)$/i.test(msg.content) || 
+    (msg.content.startsWith('https://media.giphy.com/') && msg.content.includes('.gif')) ||
+    (msg.content.startsWith('https://media.tenor.com/') && msg.content.includes('.gif'));
 
   return (
     <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} group`}>

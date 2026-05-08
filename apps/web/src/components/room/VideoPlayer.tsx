@@ -1,14 +1,12 @@
 'use client';
 
 import { useRef, useCallback } from 'react';
-import { motion, AnimatePresence } from 'framer-motion';
 import HlsPlayer from './HlsPlayer';
 import YouTubePlayer from './YouTubePlayer';
 import NativePlayer from './NativePlayer';
 import IframePlayer from './IframePlayer';
 import type { VideoType } from '@/types';
 import type { VideoPlayerAPI } from '@/hooks/useVideoSync';
-import { IconPlay } from '@/components/ui/Icons';
 
 interface VideoPlayerProps {
   type: VideoType | null;
@@ -33,22 +31,21 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
   }
 
   return (
-    <div className="absolute inset-0">
+    <div style={{ position: 'absolute', inset: 0, background: '#000', overflow: 'hidden' }}>
       {title && (
-        <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent px-4 py-2.5 rounded-t-[10px]">
-          <p className="text-xs text-white/80 font-medium truncate">{title}</p>
+        <div style={{
+          position: 'absolute', top: 0, left: 0, right: 0, zIndex: 10,
+          background: 'linear-gradient(to bottom, rgba(0,0,0,0.6), transparent)',
+          padding: '8px 16px',
+        }}>
+          <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{title}</p>
         </div>
       )}
-      <div className="video-container">
-        <AnimatePresence mode="wait">
-          <motion.div key={`${type}-${url}`} initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-            transition={{ duration: 0.2 }} className="absolute inset-0">
-            {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-            {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-            {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-            {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-          </motion.div>
-        </AnimatePresence>
+      <div style={{ position: 'absolute', inset: 0 }}>
+        {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
+        {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
+        {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
+        {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
       </div>
     </div>
   );

@@ -610,13 +610,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             {/* Video */}
             <div className="dt-vid">
               {videoUrl ? (
-                <div style={{ position: 'absolute', inset: 0 }}>
-                  <VideoPlayer
-                    type={videoType} url={videoUrl} title={videoTitle}
-                    onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
-                    playerRef={playerRef}
-                  />
-                </div>
+                <VideoPlayer
+                  type={videoType} url={videoUrl} title={videoTitle}
+                  onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
+                  playerRef={playerRef}
+                />
               ) : (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
                   <i className="ti ti-device-tv" style={{ fontSize: 64, color: '#ffffff05' }} />

@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useCallback, forwardRef, useImperativeHandle } from 'react';
+import { useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import Hls from 'hls.js';
 import type { VideoPlayerAPI } from '@/hooks/useVideoSync';
 
@@ -15,15 +15,21 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
   ({ src, onPlay, onPause, onSeeked }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const hlsRef = useRef<Hls | null>(null);
+    const onPlayRef = useRef(onPlay);
+    const onPauseRef = useRef(onPause);
+    const onSeekedRef = useRef(onSeeked);
+    onPlayRef.current = onPlay;
+    onPauseRef.current = onPause;
+    onSeekedRef.current = onSeeked;
 
     useImperativeHandle(ref, () => ({
-      play: () => videoRef.current?.play(),
+      play: () => { videoRef.current?.play().catch(() => {}); },
       pause: () => videoRef.current?.pause(),
       seek: (time: number) => {
         if (videoRef.current) videoRef.current.currentTime = time;
       },
       getCurrentTime: () => videoRef.current?.currentTime ?? 0,
-      isPlaying: () => !videoRef.current?.paused,
+      isPlaying: () => !!videoRef.current && !videoRef.current.paused,
     }));
 
     useEffect(() => {
@@ -60,31 +66,38 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
           hlsRef.current = null;
         };
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // iOS Safari — native HLS support
         video.src = src;
       }
     }, [src]);
 
-    const handlePlay = useCallback(() => {
-      onPlay?.(videoRef.current?.currentTime ?? 0);
-    }, [onPlay]);
+    // Event listeners via refs (stable)
+    useEffect(() => {
+      const v = videoRef.current;
+      if (!v) return;
 
-    const handlePause = useCallback(() => {
-      onPause?.(videoRef.current?.currentTime ?? 0);
-    }, [onPause]);
+      const handlePlay = () => onPlayRef.current?.(v.currentTime);
+      const handlePause = () => onPauseRef.current?.(v.currentTime);
+      const handleSeeked = () => onSeekedRef.current?.(v.currentTime);
 
-    const handleSeeked = useCallback(() => {
-      onSeeked?.(videoRef.current?.currentTime ?? 0);
-    }, [onSeeked]);
+      v.addEventListener('play', handlePlay);
+      v.addEventListener('pause', handlePause);
+      v.addEventListener('seeked', handleSeeked);
+
+      return () => {
+        v.removeEventListener('play', handlePlay);
+        v.removeEventListener('pause', handlePause);
+        v.removeEventListener('seeked', handleSeeked);
+      };
+    }, []);
 
     return (
       <video
         ref={videoRef}
         controls
         playsInline
-        onPlay={handlePlay}
-        onPause={handlePause}
-        onSeeked={handleSeeked}
-        className="w-full h-full object-contain bg-black"
+        crossOrigin="anonymous"
+        style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
       />
     );
   }

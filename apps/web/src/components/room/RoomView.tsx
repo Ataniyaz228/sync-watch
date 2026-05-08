@@ -303,7 +303,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </AnimatePresence>
 
       {/* ─── Main Content (Video Area) ─── */}
-      <div className={`relative flex flex-col min-w-0 min-h-0 bg-[#000] transition-all ${chatOpen ? 'shrink-0' : 'flex-1'} lg:flex-1`}
+      <div className="relative flex-1 flex flex-col min-w-0 min-h-0 bg-[#000]"
         onMouseMove={showHeader} onTouchStart={showHeader}>
         
         {/* Top Control Bar */}
@@ -408,38 +408,39 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         </header>
 
         {/* Video Player Container */}
-        <div className={`relative flex items-center justify-center pt-20 pb-4 px-0 sm:px-4 lg:px-8 ${chatOpen ? 'w-full' : 'flex-1'} lg:flex-1`}>
-          <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
-            <VideoPlayer
-              type={videoType}
-              url={videoUrl}
-              title={videoTitle}
-              onPlay={onLocalPlay}
-              onPause={onLocalPause}
-              onSeeked={onLocalSeek}
-              playerRef={playerRef}
-            />
-            
-            {/* Empty State */}
-            {!videoUrl && (
-              <div className="absolute inset-0 flex items-center justify-center">
-                <div className="text-center">
-                  <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 backdrop-blur-sm shadow-[0_0_40px_rgba(212,160,106,0.08)]">
-                    <IconPlay size={36} className="text-[#D4A06A]/60 ml-2" />
-                  </div>
-                  <p className="text-white/50 text-[14px] font-medium drop-shadow-md mb-5">
-                    {isHost ? 'No video yet — start watching!' : 'Waiting for host to start a video...'}
-                  </p>
-                  {isHost && (
-                    <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }}
-                      className="px-6 py-3 rounded-xl bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[13px] transition-all shadow-[0_4px_20px_rgba(212,160,106,0.3)] hover:shadow-[0_6px_30px_rgba(212,160,106,0.4)] hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
-                      <IconPlus size={15} /> Add Video
-                    </button>
-                  )}
+        <div className={`relative flex items-center justify-center px-0 sm:px-4 lg:px-8 flex-1 ${videoUrl ? 'pt-20 pb-4' : 'pt-0 pb-0'}`}>
+          {videoUrl ? (
+            /* Video loaded — standard aspect-video container */
+            <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
+              <VideoPlayer
+                type={videoType}
+                url={videoUrl}
+                title={videoTitle}
+                onPlay={onLocalPlay}
+                onPause={onLocalPause}
+                onSeeked={onLocalSeek}
+                playerRef={playerRef}
+              />
+            </div>
+          ) : (
+            /* Empty State — fills entire area, centered */
+            <div className="flex items-center justify-center w-full h-full">
+              <div className="text-center">
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 backdrop-blur-sm shadow-[0_0_40px_rgba(212,160,106,0.08)]">
+                  <IconPlay size={36} className="text-[#D4A06A]/60 ml-2 sm:scale-125" />
                 </div>
+                <p className="text-white/40 text-[14px] sm:text-[16px] font-medium drop-shadow-md mb-5">
+                  {isHost ? 'No video yet — start watching!' : 'Waiting for host to start a video...'}
+                </p>
+                {isHost && (
+                  <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }}
+                    className="px-6 py-3 rounded-xl bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[13px] transition-all shadow-[0_4px_20px_rgba(212,160,106,0.3)] hover:shadow-[0_6px_30px_rgba(212,160,106,0.4)] hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
+                    <IconPlus size={15} /> Add Video
+                  </button>
+                )}
               </div>
-            )}
-          </div>
+            </div>
+          )}
         </div>
         
 

@@ -85,6 +85,7 @@ export interface ServerToClientEvents {
   'video:seek': (data: { currentTime: number; userId: string }) => void;
   'video:url-changed': (data: VideoResolution & { userId: string }) => void;
   'video:sync-state': (data: RoomState) => void;
+  'video:sync-correction': (data: { currentTime: number; isPlaying: boolean }) => void;
   'chat:message': (data: ChatMessage) => void;
   'chat:history': (data: ChatMessage[]) => void;
   'chat:reaction': (data: { messageId: string; reaction: ChatReaction; action: 'add' | 'remove' }) => void;
@@ -112,6 +113,7 @@ export interface ClientToServerEvents {
   'video:seek': (data: { roomSlug: string; currentTime: number }) => void;
   'video:url-change': (data: { roomSlug: string } & VideoResolution) => void;
   'video:sync-request': (data: { roomSlug: string }) => void;
+  'video:sync-position': (data: { roomSlug: string; currentTime: number; isPlaying: boolean }) => void;
   'chat:message': (data: { roomSlug: string; content: string }) => void;
   'chat:reaction': (data: { roomSlug: string; messageId: string; emoji: string }) => void;
   'video:pause-request': (data: { roomSlug: string; currentTime: number }) => void;

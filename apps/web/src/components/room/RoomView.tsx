@@ -88,19 +88,63 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     return u;
   }, [on]);
 
+  // Pending sync: when we receive sync-state, we need to seek+play AFTER the player loads
+  const pendingSyncRef = useRef<{ currentTime: number; isPlaying: boolean } | null>(null);
+
   useEffect(() => {
     const u = on('video:sync-state', (s: RoomState) => {
-      if (s.type && s.resolvedUrl) { setVideoType(s.type); setVideoUrl(s.resolvedUrl); setVideoTitle(s.title || ''); }
+      if (s.type && s.resolvedUrl) {
+        setVideoType(s.type); setVideoUrl(s.resolvedUrl); setVideoTitle(s.title || '');
+        // Store pending sync — player might not be ready yet
+        pendingSyncRef.current = {
+          currentTime: s.currentTime ?? 0,
+          isPlaying: s.isPlaying ?? false,
+        };
+      }
     });
 
-    // Race condition fix: the server may send sync-state before this handler is registered.
-    // Re-request state after mount to catch any missed events.
+    // Race condition fix: re-request state after mount
     const t1 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 500);
     const t2 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 2000);
     const t3 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 5000);
 
     return () => { u(); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [on, emit, roomSlug]);
+
+  // Apply pending sync once player is ready
+  useEffect(() => {
+    if (!videoUrl) return;
+    const interval = setInterval(() => {
+      const pending = pendingSyncRef.current;
+      if (!pending) { clearInterval(interval); return; }
+      const player = playerRef.current;
+      if (!player) return; // player not mounted yet, keep retrying
+      // Player is ready — apply sync
+      if (pending.currentTime > 1) {
+        player.seek(pending.currentTime);
+      }
+      if (pending.isPlaying) {
+        player.play();
+      }
+      pendingSyncRef.current = null;
+      clearInterval(interval);
+    }, 300);
+    return () => clearInterval(interval);
+  }, [videoUrl]);
+
+  // Host: periodically broadcast position so guests stay in sync
+  useEffect(() => {
+    if (!isHost || !videoUrl) return;
+    const interval = setInterval(() => {
+      const player = playerRef.current;
+      if (!player) return;
+      const currentTime = player.getCurrentTime();
+      if (currentTime > 0) {
+        emit('video:sync-position', { roomSlug, currentTime, isPlaying: player.isPlaying() });
+      }
+    }, 10000); // every 10 seconds
+    return () => clearInterval(interval);
+  }, [isHost, videoUrl, emit, roomSlug]);
 
   // Auto-load video from history query params
   useEffect(() => {

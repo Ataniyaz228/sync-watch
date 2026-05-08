@@ -306,6 +306,21 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     }
   });
 
+  // Host periodically sends position — update state + forward to guests
+  socket.on('video:sync-position', async (data: { roomSlug: string; currentTime: number; isPlaying: boolean }) => {
+    const { roomSlug, currentTime, isPlaying } = data;
+    // Update stored state
+    const state = await getRoomState(roomSlug);
+    await setRoomState(roomSlug, {
+      ...state,
+      currentTime,
+      isPlaying,
+      updatedAt: Date.now(),
+    });
+    // Forward to all OTHER clients in room (not the sender)
+    socket.to(roomSlug).emit('video:sync-correction', { currentTime, isPlaying });
+  });
+
   // ─── Queue handlers ───
 
   socket.on('queue:add', (data) => {

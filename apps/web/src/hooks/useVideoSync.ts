@@ -80,6 +80,35 @@ export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideo
     return unsub;
   }, [on, getPlayer]);
 
+  // Periodic sync correction from host — auto-correct drift > 3s
+  useEffect(() => {
+    if (isHost) return; // host doesn't correct itself
+    const unsub = on('video:sync-correction', (data) => {
+      const player = getPlayer();
+      if (!player) return;
+      const localTime = player.getCurrentTime();
+      const drift = Math.abs(localTime - data.currentTime);
+      // Only correct if drift is significant (> 3 seconds)
+      if (drift > 3) {
+        setSyncing(true);
+        player.seek(data.currentTime);
+        setTimeout(() => { isSyncingRef.current = false; }, SYNC_DEBOUNCE);
+      }
+      // Sync play/pause state
+      const localPlaying = player.isPlaying();
+      if (data.isPlaying && !localPlaying) {
+        setSyncing(true);
+        player.play();
+        setTimeout(() => { isSyncingRef.current = false; }, SYNC_DEBOUNCE);
+      } else if (!data.isPlaying && localPlaying) {
+        setSyncing(true);
+        player.pause();
+        setTimeout(() => { isSyncingRef.current = false; }, SYNC_DEBOUNCE);
+      }
+    });
+    return unsub;
+  }, [on, getPlayer, isHost]);
+
   // Host receives pause request from viewer
   useEffect(() => {
     const unsub = on('video:pause-request', (data) => {

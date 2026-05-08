@@ -85,7 +85,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
   };
 
   return (
-    <div className="flex flex-col h-full bg-[var(--color-bg-0)] relative">
+    <div className="flex flex-col h-full relative" style={{ background: 'var(--chat-bg, var(--color-bg-0))' }}>
       {/* Messages */}
       <div className="flex-1 overflow-y-auto px-3 py-3 space-y-0.5 min-h-0">
         {messages.length === 0 && (
@@ -133,11 +133,11 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
                     onChange={(e) => setGifSearch(e.target.value)}
                     placeholder="Search GIFs..."
                     autoComplete="off"
-                    className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
+                    className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[var(--chat-accent,#D4A06A)]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
                   />
                   {gifLoading && (
                     <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                      <div className="w-4 h-4 border-2 border-[#D4A06A]/30 border-t-[#D4A06A] rounded-full animate-spin" />
+                      <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--chat-accent,#D4A06A)', borderTopColor: 'transparent' }} />
                     </div>
                   )}
                 </div>
@@ -158,7 +158,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
                   <div className="grid grid-cols-2 gap-1.5">
                     {gifResults.map((gif) => (
                       <button key={gif.id} onClick={() => sendGif(gif.url)}
-                        className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[#D4A06A]/60 transition-all group aspect-square">
+                        className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[var(--chat-accent,#D4A06A)]/60 transition-all group aspect-square">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={gif.preview || gif.url} alt={gif.title} loading="lazy"
                           className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
@@ -182,18 +182,30 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
       </AnimatePresence>
 
       {/* Input */}
-      <form onSubmit={handleSubmit} className="px-3 py-3.5 border-t border-[var(--color-border)] flex-shrink-0 safe-bottom bg-[var(--color-bg-1)] relative z-40">
+      <form onSubmit={handleSubmit} className="px-3 py-3.5 border-t border-[var(--color-border)] flex-shrink-0 safe-bottom relative z-40" style={{ background: 'var(--chat-input-bg, var(--color-bg-1))' }}>
         <div className="flex items-center gap-2">
           <button type="button" onClick={() => setShowGifPicker(!showGifPicker)}
-            className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${showGifPicker ? 'bg-[#D4A06A] text-black' : 'bg-[var(--color-bg-3)] text-[var(--color-text-3)] hover:text-[var(--color-text-0)] hover:bg-[var(--color-bg-4)]'}`} title="GIFs">
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0"
+            style={{
+              background: showGifPicker ? 'var(--chat-accent,#D4A06A)' : 'var(--color-bg-3)',
+              color: showGifPicker ? '#000' : 'var(--color-text-3)',
+            }} title="GIFs">
             <span className="text-[10px] font-black uppercase tracking-tight">GIF</span>
           </button>
           <div className="flex-1 relative">
             <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
               placeholder="Type a message..." autoComplete="off"
-              className="w-full bg-[var(--color-bg-2)] border border-[var(--color-border)] focus:ring-1 focus:ring-[#D4A06A]/50 focus:bg-[var(--color-bg-0)] rounded-xl py-3 px-4 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none" maxLength={500} id="chat-input" />
+              className="w-full border border-[var(--color-border)] rounded-xl py-3 px-4 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
+              style={{ background: 'var(--chat-input-field, var(--color-bg-2))' }}
+              maxLength={500} id="chat-input" />
           </div>
-          <button type="submit" disabled={!input.trim()} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${input.trim() ? 'bg-[#D4A06A] text-black shadow-[0_0_10px_rgba(212,160,106,0.4)] hover:scale-105' : 'bg-[var(--color-bg-3)] text-[var(--color-text-4)]'}`} id="chat-send-btn">
+          <button type="submit" disabled={!input.trim()}
+            className="w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0"
+            style={{
+              background: input.trim() ? 'var(--chat-accent,#D4A06A)' : 'var(--color-bg-3)',
+              color: input.trim() ? '#000' : 'var(--color-text-4)',
+            }}
+            id="chat-send-btn">
             <IconSend size={15} />
           </button>
         </div>
@@ -240,8 +252,15 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
           <span className="text-[9px] text-[var(--color-text-4)] font-mono">{timeAgo(msg.createdAt)}</span>
         </div>
         <div className={`cursor-pointer transition-colors overflow-hidden ${
-          isGif ? 'bg-transparent rounded-xl' : (isOwn ? 'bg-[#D4A06A]/10 border border-[#D4A06A]/15 hover:bg-[#D4A06A]/15 rounded-2xl rounded-br-md' : 'bg-[var(--color-bg-2)] hover:bg-[var(--color-bg-3)] rounded-2xl rounded-bl-md')
-        }`} onClick={togglePicker}>
+          isGif ? 'bg-transparent rounded-xl' : (isOwn
+            ? 'rounded-2xl rounded-br-md'
+            : 'bg-[var(--color-bg-2)] hover:bg-[var(--color-bg-3)] rounded-2xl rounded-bl-md')
+        }`}
+          style={isOwn && !isGif ? {
+            background: 'var(--chat-own-bg, rgba(212,160,106,0.10))',
+            border: '1px solid var(--chat-own-border, rgba(212,160,106,0.15))',
+          } : undefined}
+          onClick={togglePicker}>
           {isGif ? (
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={msg.content} alt="GIF" className="max-w-[220px] w-full rounded-xl border border-white/5" />

@@ -217,6 +217,15 @@ body {
 
 .video-container video { object-fit: contain; }
 
+/* Inside mob-vid (which already has aspect-ratio), skip the padding-top trick */
+.mob-vid .video-container {
+  padding-top: 0;
+  position: absolute;
+  inset: 0;
+  border-radius: 0;
+}
+
+
 /* ═══ Reactions ═══ */
 
 .reaction-bar {
@@ -1287,6 +1296,14 @@ body {
   --mt2: #777;
   --mt3: #383838;
   --mbr: #1a1a1a;
+
+  /* Chat component theming inside .mob */
+  --chat-bg: #080808;
+  --chat-input-bg: #080808;
+  --chat-input-field: #161616;
+  --chat-accent: #A8B8C4;
+  --chat-own-bg: rgba(168,184,196,0.09);
+  --chat-own-border: rgba(168,184,196,0.19);
   background: var(--mbg);
   color: var(--mt1);
 }

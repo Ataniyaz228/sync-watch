@@ -41,9 +41,23 @@ interface ChatProps {
   onReact: (messageId: string, emoji: string) => void;
   messagesEndRef: React.RefObject<HTMLDivElement | null>;
   currentUserId: string;
+  // Inline request notifications
+  pauseRequest?: { username: string; currentTime: number } | null;
+  onAcceptPause?: () => void;
+  onRejectPause?: () => void;
+  videoRequest?: { username: string; action: string; currentTime?: number } | null;
+  onAcceptVideoRequest?: () => void;
+  onRejectVideoRequest?: () => void;
+  videoSuggestion?: { username: string; url: string; title?: string } | null;
+  onAcceptSuggestion?: () => void;
+  onRejectSuggestion?: () => void;
 }
 
-export default function Chat({ messages, onSendMessage, onReact, messagesEndRef, currentUserId }: ChatProps) {
+export default function Chat({ messages, onSendMessage, onReact, messagesEndRef, currentUserId,
+  pauseRequest, onAcceptPause, onRejectPause,
+  videoRequest, onAcceptVideoRequest, onRejectVideoRequest,
+  videoSuggestion, onAcceptSuggestion, onRejectSuggestion,
+}: ChatProps) {
   const [input, setInput] = useState('');
   const [activeReactionId, setActiveReactionId] = useState<string | null>(null);
   const [showGifPicker, setShowGifPicker] = useState(false);
@@ -143,6 +157,46 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
             </motion.div>
           ))}
         </AnimatePresence>
+
+        {/* ── Inline Request Cards ── */}
+        {pauseRequest && (
+          <div className="mx-3 mb-2 p-2.5 rounded-lg" style={{ background: 'var(--dt-ag, rgba(168,184,196,.09))', border: '1px solid var(--dt-ab, rgba(168,184,196,.18))' }}>
+            <p style={{ fontSize: 11, color: 'var(--dt-t2, #666)', marginBottom: 6 }}>
+              <span style={{ color: 'var(--dt-t1, #eee)', fontWeight: 600 }}>{pauseRequest.username}</span> просит паузу
+            </p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={onAcceptPause} className="dt-ep-btn acc" style={{ flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 10 }}>ок</button>
+              <button onClick={onRejectPause} className="dt-ep-btn" style={{ flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 10 }}>нет</button>
+            </div>
+          </div>
+        )}
+        {videoRequest && (
+          <div className="mx-3 mb-2 p-2.5 rounded-lg" style={{ background: 'var(--dt-ag, rgba(168,184,196,.09))', border: '1px solid var(--dt-ab, rgba(168,184,196,.18))' }}>
+            <p style={{ fontSize: 11, color: 'var(--dt-t2, #666)', marginBottom: 6 }}>
+              <span style={{ color: 'var(--dt-t1, #eee)', fontWeight: 600 }}>{videoRequest.username}</span>
+              {' '}просит {videoRequest.action === 'play' ? 'play' : `seek → ${Math.floor((videoRequest.currentTime || 0) / 60)}:${String(Math.floor((videoRequest.currentTime || 0) % 60)).padStart(2, '0')}`}
+            </p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={onAcceptVideoRequest} className="dt-ep-btn acc" style={{ flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 10 }}>ок</button>
+              <button onClick={onRejectVideoRequest} className="dt-ep-btn" style={{ flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 10 }}>нет</button>
+            </div>
+          </div>
+        )}
+        {videoSuggestion && (
+          <div className="mx-3 mb-2 p-2.5 rounded-lg" style={{ background: 'var(--dt-ag, rgba(168,184,196,.09))', border: '1px solid var(--dt-ab, rgba(168,184,196,.18))' }}>
+            <p style={{ fontSize: 11, color: 'var(--dt-t2, #666)', marginBottom: 2 }}>
+              <span style={{ color: 'var(--dt-t1, #eee)', fontWeight: 600 }}>{videoSuggestion.username}</span> предлагает видео
+            </p>
+            <p style={{ fontSize: 10, color: 'var(--dt-a, #A8B8C4)', marginBottom: 6, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>
+              {videoSuggestion.title || videoSuggestion.url}
+            </p>
+            <div style={{ display: 'flex', gap: 6 }}>
+              <button onClick={onAcceptSuggestion} className="dt-ep-btn acc" style={{ flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 10 }}>принять</button>
+              <button onClick={onRejectSuggestion} className="dt-ep-btn" style={{ flex: 1, justifyContent: 'center', padding: '4px 0', fontSize: 10 }}>нет</button>
+            </div>
+          </div>
+        )}
+
         <div ref={messagesEndRef} />
       </div>
 

@@ -2032,8 +2032,9 @@ body {
 
 /* ── Right sidebar ── */
 .dt-right {
-  width: 260px; display: flex; flex-direction: column;
+  width: 300px; display: flex; flex-direction: column;
   flex-shrink: 0; background: var(--dt-bg); min-height: 0;
+  border-left: 1px solid var(--dt-br);
 }
 .dt-sb-tabs {
   display: flex; border-bottom: 1px solid var(--dt-br);

@@ -45,7 +45,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'queue'>('chat');
   const [mobileTab, setMobileTab] = useState<'player' | 'queue' | 'url'>('player');
-  const [showSidebar, setShowSidebar] = useState(true);
+  const [showBottomBar, setShowBottomBar] = useState(true);
   const [desktopUrl, setDesktopUrl] = useState('');
   const [desktopUrlLoading, setDesktopUrlLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -202,77 +202,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   return (
     <div className="flex flex-col lg:flex-row h-dvh bg-[var(--color-bg-0)] overflow-hidden">
       
-      {/* ─── Pause Request Toast ─── */}
-      <AnimatePresence>
-        {pauseRequest && isHost && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
-            className="fixed top-6 left-1/2 z-50 bg-[var(--color-bg-1)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-2xl px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
-            style={{ transform: 'translateX(-50%)', minWidth: 320, maxWidth: '90vw' }}
-          >
-            <p className="text-[13px] text-[var(--color-text-2)] mb-3 text-center">
-              <span className="text-[var(--color-text-0)] font-semibold">{pauseRequest.username}</span>
-              {' '}requests to pause
-            </p>
-            <div className="flex gap-3">
-              <button onClick={acceptPauseRequest} className="flex-1 btn-glow py-2 text-xs">Accept</button>
-              <button onClick={rejectPauseRequest} className="flex-1 btn-secondary py-2 text-xs hover:text-[var(--color-error)]">Reject</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* ─── Video Suggestion Toast ─── */}
-      <AnimatePresence>
-        {videoSuggestion && isHost && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
-            className="fixed top-6 left-1/2 z-50 bg-[var(--color-bg-1)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-2xl px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
-            style={{ transform: 'translateX(-50%)', minWidth: 320, maxWidth: '90vw' }}
-          >
-            <p className="text-[13px] text-[var(--color-text-2)] mb-1 text-center">
-              <span className="text-[var(--color-text-0)] font-semibold">{videoSuggestion.username}</span>
-              {' '}suggests a video
-            </p>
-            <p className="text-[11px] text-[#A8B8C4] font-medium text-center truncate mb-3">
-              {videoSuggestion.title || videoSuggestion.url}
-            </p>
-            <div className="flex gap-3">
-              <button onClick={acceptVideoSuggestion} className="flex-1 btn-glow py-2 text-xs">Accept</button>
-              <button onClick={rejectVideoSuggestion} className="flex-1 btn-secondary py-2 text-xs hover:text-[var(--color-error)]">Reject</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
 
-      {/* ─── Unified Video Request Toast ─── */}
-      <AnimatePresence>
-        {videoRequest && isHost && (
-          <motion.div
-            initial={{ opacity: 0, y: -20, scale: 0.95 }}
-            animate={{ opacity: 1, y: 0, scale: 1 }}
-            exit={{ opacity: 0, y: -20, scale: 0.95 }}
-            transition={{ duration: 0.3, type: "spring", bounce: 0.4 }}
-            className="fixed top-6 left-1/2 z-50 bg-[var(--color-bg-1)]/80 backdrop-blur-xl border border-[var(--color-border)] rounded-2xl px-5 py-4 shadow-[0_20px_40px_rgba(0,0,0,0.4)]"
-            style={{ transform: 'translateX(-50%)', minWidth: 320, maxWidth: '90vw' }}
-          >
-            <p className="text-[13px] text-[var(--color-text-2)] mb-3 text-center">
-              <span className="text-[var(--color-text-0)] font-semibold">{videoRequest.username}</span>
-              {' '}requests to {videoRequest.action === 'play' ? 'play' : `seek to ${Math.floor((videoRequest.currentTime || 0) / 60)}:${String(Math.floor((videoRequest.currentTime || 0) % 60)).padStart(2, '0')}`}
-            </p>
-            <div className="flex gap-3">
-              <button onClick={acceptVideoRequest} className="flex-1 btn-glow py-2 text-xs">Accept</button>
-              <button onClick={rejectVideoRequest} className="flex-1 btn-secondary py-2 text-xs hover:text-[var(--color-error)]">Reject</button>
-            </div>
-          </motion.div>
-        )}
-      </AnimatePresence>
+
+
+
 
       {/* ─── Change Video Modal ─── */}
       <AnimatePresence>
@@ -418,7 +352,17 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 {/* Chat + input (use existing Chat component) */}
                 <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ background: '#080808' }}>
                   <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
-                    messagesEndRef={messagesEndRef} currentUserId={userId} />
+                    messagesEndRef={messagesEndRef} currentUserId={userId}
+                    pauseRequest={isHost ? pauseRequest : null}
+                    onAcceptPause={acceptPauseRequest}
+                    onRejectPause={rejectPauseRequest}
+                    videoRequest={isHost ? videoRequest : null}
+                    onAcceptVideoRequest={acceptVideoRequest}
+                    onRejectVideoRequest={rejectVideoRequest}
+                    videoSuggestion={isHost ? videoSuggestion : null}
+                    onAcceptSuggestion={acceptVideoSuggestion}
+                    onRejectSuggestion={rejectVideoSuggestion}
+                  />
                 </div>
               </motion.div>
             )}
@@ -621,9 +565,9 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 <div className="dt-ep-sub">{usersCount} смотрят</div>
               </div>
               <div className="dt-ep-btns">
-                <button className={`dt-ep-btn${showSidebar ? ' acc' : ''}`}
-                  onClick={() => setShowSidebar(s => !s)}>
-                  <i className="ti ti-layout-sidebar-right" style={{ fontSize: 11 }} />чат
+                <button className={`dt-ep-btn${showBottomBar ? ' acc' : ''}`}
+                  onClick={() => setShowBottomBar(s => !s)}>
+                  <i className="ti ti-chevron-down" style={{ fontSize: 11, transform: showBottomBar ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }} />скрыть
                 </button>
                 <button className="dt-ep-btn" onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }}>
                   <i className="ti ti-playlist" style={{ fontSize: 11 }} />
@@ -637,7 +581,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               </div>
             </div>
 
-            <form className="dt-url-bar" onSubmit={async (e) => {
+            {showBottomBar && <form className="dt-url-bar" onSubmit={async (e) => {
               e.preventDefault();
               const u = desktopUrl.trim();
               if (!u || desktopUrlLoading) return;
@@ -672,11 +616,10 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                   : <><i className="ti ti-player-play" style={{ fontSize: 11 }} />загрузить</>
                 }
               </button>
-            </form>
+            </form>}
           </div>
 
-          {showSidebar && (
-            <div className="dt-right">
+          <div className="dt-right">
               <div className="dt-sb-tabs">
                 <button className={`dt-sb-tab${sidebarTab === 'chat' ? ' on' : ''}`}
                   onClick={() => setSidebarTab('chat')}>
@@ -690,7 +633,17 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
                 {sidebarTab === 'chat' ? (
                   <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
-                    messagesEndRef={messagesEndRef} currentUserId={userId} />
+                    messagesEndRef={messagesEndRef} currentUserId={userId}
+                    pauseRequest={isHost ? pauseRequest : null}
+                    onAcceptPause={acceptPauseRequest}
+                    onRejectPause={rejectPauseRequest}
+                    videoRequest={isHost ? videoRequest : null}
+                    onAcceptVideoRequest={acceptVideoRequest}
+                    onRejectVideoRequest={rejectVideoRequest}
+                    videoSuggestion={isHost ? videoSuggestion : null}
+                    onAcceptSuggestion={acceptVideoSuggestion}
+                    onRejectSuggestion={rejectVideoSuggestion}
+                  />
                 ) : (
                   <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
                     <div style={{ flex: 1, overflowY: 'auto' }}>
@@ -731,7 +684,6 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 )}
               </div>
             </div>
-          )}
 
         </div>
       </div>

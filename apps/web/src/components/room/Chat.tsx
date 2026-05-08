@@ -326,40 +326,51 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
   const isGif = isGifUrl(msg.content);
 
   return (
-    <div className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''} group mb-1`}>
-      <div className="w-7 h-7 rounded-[10px] shadow-sm flex-shrink-0 flex items-center justify-center text-[11px] font-black text-[var(--color-bg-0)] mt-0.5"
-        style={{ backgroundColor: color }}>
-        {msg.username[0].toUpperCase()}
-      </div>
-      <div className={`max-w-[85%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-        <div className={`flex items-baseline gap-2 mb-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
-          <span className="text-[11px] font-bold tracking-tight" style={{ color }}>{msg.username}</span>
-          <span className="text-[9px] text-[var(--color-text-4)] font-medium tracking-wide">{timeAgo(msg.createdAt)}</span>
+    <div className={`flex gap-2.5 ${isOwn ? 'justify-end' : ''} group mb-2`}>
+      {!isOwn && (
+        <div className="w-8 h-8 rounded-full shadow-sm flex-shrink-0 flex items-center justify-center text-[11px] font-black text-[var(--color-bg-0)] mt-auto"
+          style={{ backgroundColor: color }}>
+          {msg.username[0].toUpperCase()}
         </div>
+      )}
+      <div className={`max-w-[75%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+        {!isOwn && (
+          <div className="flex items-baseline gap-2 mb-1 ml-1">
+            <span className="text-[11px] font-bold tracking-tight" style={{ color }}>{msg.username}</span>
+            <span className="text-[9px] text-[var(--color-text-4)] font-medium tracking-wide">{timeAgo(msg.createdAt)}</span>
+          </div>
+        )}
         <div className={`chat-bubble cursor-pointer transition-all overflow-hidden shadow-sm ${
           isGif ? 'bg-transparent rounded-[14px]' : (isOwn
-            ? 'chat-bubble-own rounded-[16px] rounded-tr-[4px]'
-            : 'rounded-[16px] rounded-tl-[4px]')
+            ? 'rounded-2xl rounded-br-sm'
+            : 'rounded-2xl rounded-bl-sm')
         }`}
           style={isOwn && !isGif ? {
-            background: 'var(--chat-own-bg, rgba(168,184,196,0.12))',
-            border: '1px solid var(--chat-own-border, rgba(168,184,196,0.25))',
-            color: 'var(--color-text-0)'
+            background: 'var(--chat-accent, #A8B8C4)',
+            color: '#0d1a20'
           } : (!isGif ? { 
-            background: 'var(--color-bg-2)',
-            border: '1px solid rgba(255,255,255,0.04)'
+            background: 'var(--color-bg-2, #1c262e)',
+            color: 'var(--color-text-0)'
           } : undefined)}
           onClick={togglePicker}>
           {isGif ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={msg.content} alt="GIF" className="max-w-[240px] w-full rounded-[14px] border border-white/10 shadow-md" />
+            <img src={msg.content} alt="GIF" className="max-w-[240px] w-full rounded-[14px] shadow-md" />
           ) : (
-            <div className="px-3.5 py-2 text-[13.5px] leading-relaxed text-[var(--color-text-1)] break-words">{msg.content}</div>
+            <div className="px-3.5 py-2 text-[13.5px] leading-relaxed break-words font-medium">{msg.content}</div>
           )}
         </div>
 
+        {isOwn && (
+          <div className="mt-1 mr-1 h-3 flex items-center">
+            <span className="text-[9px] text-[var(--color-text-4)] font-medium tracking-wide opacity-0 group-hover:opacity-100 transition-opacity">
+              {timeAgo(msg.createdAt)}
+            </span>
+          </div>
+        )}
+
         {Object.keys(groups).length > 0 && (
-          <div className="reaction-bar mt-1">
+          <div className="reaction-bar mt-1.5">
             {Object.entries(groups).map(([emoji, users]) => (
               <button key={emoji} onClick={() => react(emoji)}
                 className={`reaction-pill ${users.some(u => u.userId === currentUserId) ? 'own' : ''}`}>
@@ -374,7 +385,7 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
           {showPicker && (
             <motion.div initial={{ opacity: 0, y: 4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 4, scale: 0.95 }} transition={{ duration: 0.12 }}
-              className="reaction-picker mt-1">
+              className="reaction-picker mt-1 z-10 relative">
               {REACTION_EMOJIS.map((e) => <button key={e} onClick={() => react(e)} className="!w-[40px] !h-[40px] sm:!w-[32px] sm:!h-[32px] text-[20px] sm:text-[18px]">{e}</button>)}
             </motion.div>
           )}

@@ -340,17 +340,19 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
             <span className="text-[9px] text-[var(--color-text-4)] font-medium tracking-wide">{timeAgo(msg.createdAt)}</span>
           </div>
         )}
-        <div className={`chat-bubble cursor-pointer transition-all overflow-hidden shadow-sm ${
+        <div className={`chat-bubble w-fit max-w-full cursor-pointer transition-all overflow-hidden shadow-sm ${
           isGif ? 'bg-transparent rounded-[14px]' : (isOwn
-            ? 'rounded-2xl rounded-br-[4px] px-4 py-2.5 text-[13.5px] leading-relaxed break-words font-medium'
-            : 'rounded-2xl rounded-bl-[4px] px-4 py-2.5 text-[13.5px] leading-relaxed break-words font-medium')
+            ? 'rounded-2xl rounded-br-[4px] text-[13.5px] leading-relaxed break-words font-medium'
+            : 'rounded-2xl rounded-bl-[4px] text-[13.5px] leading-relaxed break-words font-medium')
         }`}
           style={isOwn && !isGif ? {
             background: 'var(--chat-accent, #A8B8C4)',
-            color: '#0d1a20'
+            color: '#0d1a20',
+            padding: '8px 16px'
           } : (!isGif ? { 
             background: 'var(--color-bg-2, #1c262e)',
-            color: 'var(--color-text-0)'
+            color: 'var(--color-text-0)',
+            padding: '8px 16px'
           } : undefined)}
           onClick={togglePicker}>
           {isGif ? (

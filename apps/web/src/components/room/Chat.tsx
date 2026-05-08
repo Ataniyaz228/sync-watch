@@ -148,7 +148,13 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
 
               {/* GIF Grid */}
               <div className="flex-1 overflow-y-auto p-2 min-h-0">
-                {gifResults.length > 0 ? (
+                {gifLoading ? (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {Array.from({ length: 8 }).map((_, i) => (
+                      <div key={i} className="skeleton aspect-square rounded-lg" />
+                    ))}
+                  </div>
+                ) : gifResults.length > 0 ? (
                   <div className="grid grid-cols-2 gap-1.5">
                     {gifResults.map((gif) => (
                       <button key={gif.id} onClick={() => sendGif(gif.url)}
@@ -159,11 +165,11 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
                       </button>
                     ))}
                   </div>
-                ) : !gifLoading ? (
+                ) : (
                   <div className="flex items-center justify-center h-full text-[var(--color-text-4)] text-xs">
-                    {gifSearch ? 'No GIFs found' : 'Loading...'}
+                    {gifSearch ? 'No GIFs found' : 'Search for GIFs'}
                   </div>
-                ) : null}
+                )}
               </div>
 
               {/* Tenor Attribution */}
@@ -233,8 +239,8 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
           <span className="text-[10px] font-medium" style={{ color }}>{msg.username}</span>
           <span className="text-[9px] text-[var(--color-text-4)] font-mono">{timeAgo(msg.createdAt)}</span>
         </div>
-        <div className={`rounded-xl cursor-pointer transition-colors overflow-hidden ${
-          isGif ? 'bg-transparent' : (isOwn ? 'bg-[var(--color-bg-3)] hover:bg-[var(--color-bg-4)]' : 'bg-[var(--color-bg-2)] hover:bg-[var(--color-bg-3)]')
+        <div className={`cursor-pointer transition-colors overflow-hidden ${
+          isGif ? 'bg-transparent rounded-xl' : (isOwn ? 'bg-[#D4A06A]/10 border border-[#D4A06A]/15 hover:bg-[#D4A06A]/15 rounded-2xl rounded-br-md' : 'bg-[var(--color-bg-2)] hover:bg-[var(--color-bg-3)] rounded-2xl rounded-bl-md')
         }`} onClick={togglePicker}>
           {isGif ? (
             /* eslint-disable-next-line @next/next/no-img-element */
@@ -261,7 +267,7 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
             <motion.div initial={{ opacity: 0, y: 4, scale: 0.95 }} animate={{ opacity: 1, y: 0, scale: 1 }}
               exit={{ opacity: 0, y: 4, scale: 0.95 }} transition={{ duration: 0.12 }}
               className="reaction-picker mt-1">
-              {REACTION_EMOJIS.map((e) => <button key={e} onClick={() => react(e)}>{e}</button>)}
+              {REACTION_EMOJIS.map((e) => <button key={e} onClick={() => react(e)} className="!w-[40px] !h-[40px] sm:!w-[32px] sm:!h-[32px] text-[20px] sm:text-[18px]">{e}</button>)}
             </motion.div>
           )}
         </AnimatePresence>

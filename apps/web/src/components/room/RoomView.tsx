@@ -12,7 +12,7 @@ import VideoPlayer from './VideoPlayer';
 import UrlInput from './UrlInput';
 import Chat from './Chat';
 import type { VideoResolution, VideoType, RoomState, QueueItem, RequestAction } from '@/types';
-import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume, IconHistory, IconPlus, IconArrowRight } from '@/components/ui/Icons';
+import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume, IconHistory, IconPlus, IconArrowRight, IconMoreVertical, IconList } from '@/components/ui/Icons';
 
 interface RoomViewProps {
   roomSlug: string;
@@ -43,6 +43,10 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [videoSuggestion, setVideoSuggestion] = useState<{ username: string; url: string; title?: string; type: string; resolvedUrl: string; originalUrl: string } | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'queue'>('chat');
+  const [headerVisible, setHeaderVisible] = useState(true);
+  const [toastMsg, setToastMsg] = useState('');
+  const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const headerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playerRef = useRef<VideoPlayerAPI | null>(null);
   const { emit, on } = useSocket(roomSlug, username, userId);
@@ -74,6 +78,21 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     const u2 = on('room:user-left', (d) => { setUsersCount(d.usersCount); setUsers(p => p.filter(u => u !== d.username)); });
     return () => { u1(); u2(); };
   }, [on]);
+
+  // Auto-hide header when video is loaded (desktop only)
+  const showHeader = useCallback(() => {
+    setHeaderVisible(true);
+    if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current);
+    headerTimeoutRef.current = setTimeout(() => {
+      if (videoUrl) setHeaderVisible(false);
+    }, 3500);
+  }, [videoUrl]);
+
+  useEffect(() => {
+    if (!videoUrl) { setHeaderVisible(true); return; }
+    showHeader();
+    return () => { if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current); };
+  }, [videoUrl, showHeader]);
 
   useEffect(() => {
     const u = on('video:url-changed', (d) => { setVideoType(d.type); setVideoUrl(d.resolvedUrl); setVideoTitle(d.title || ''); });
@@ -174,6 +193,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const copyLink = useCallback(() => {
     navigator.clipboard.writeText(`${window.location.origin}/room/${roomSlug}`).then(() => {
       setCopied(true); setTimeout(() => setCopied(false), 2000);
+      setToastMsg('Link copied!');
+      setTimeout(() => setToastMsg(''), 2500);
     });
   }, [roomSlug]);
 
@@ -282,10 +303,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </AnimatePresence>
 
       {/* ─── Main Content (Video Area) ─── */}
-      <div className={`relative flex flex-col min-w-0 min-h-0 bg-[#000] transition-all ${chatOpen ? 'shrink-0' : 'flex-1'} lg:flex-1`}>
+      <div className={`relative flex flex-col min-w-0 min-h-0 bg-[#000] transition-all ${chatOpen ? 'shrink-0' : 'flex-1'} lg:flex-1`}
+        onMouseMove={showHeader} onTouchStart={showHeader}>
         
         {/* Top Control Bar */}
-        <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-12 px-4 sm:px-6 flex items-start justify-between pointer-events-none">
+        <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-10 px-4 sm:px-6 flex items-start justify-between pointer-events-none transition-all duration-500 ${headerVisible ? 'opacity-100 translate-y-0' : 'lg:opacity-0 lg:-translate-y-4'}`}>
           
           <div className="flex flex-col gap-2 pointer-events-auto">
             <div className="flex items-center gap-3">
@@ -348,13 +370,34 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               </button>
             )}
 
+            {/* Desktop: show all buttons. Mobile: group into More menu */}
+            <button onClick={copyLink} className="hidden sm:flex w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg" title="Copy link">
+              {copied ? <IconCheck size={15} className="text-[#5CB87A]" /> : <IconLink size={15} />}
+            </button>
+
             <button onClick={() => router.push(`/room/${roomSlug}/history`)} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg hidden sm:flex" title="Room history">
               <IconHistory size={15} />
             </button>
 
-            <button onClick={copyLink} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg" title="Copy link">
-              {copied ? <IconCheck size={15} className="text-[#5CB87A]" /> : <IconLink size={15} />}
-            </button>
+            {/* Mobile: More menu */}
+            <div className="relative sm:hidden">
+              <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg">
+                <IconMoreVertical size={16} />
+              </button>
+              <AnimatePresence>
+                {showMoreMenu && (
+                  <motion.div initial={{ opacity: 0, scale: 0.9, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -4 }}
+                    transition={{ duration: 0.15 }} className="more-menu" onClick={() => setShowMoreMenu(false)}>
+                    <button onClick={copyLink} className="more-menu-item">
+                      <IconLink size={14} /> {copied ? 'Copied!' : 'Copy Link'}
+                    </button>
+                    <button onClick={() => router.push(`/room/${roomSlug}/history`)} className="more-menu-item">
+                      <IconHistory size={14} /> Room History
+                    </button>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
 
             {/* Mobile Chat Toggle */}
             <button onClick={() => setChatOpen(true)} className="lg:hidden w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg relative">
@@ -379,14 +422,20 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             
             {/* Empty State */}
             {!videoUrl && (
-              <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+              <div className="absolute inset-0 flex items-center justify-center">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm shadow-[0_0_30px_rgba(255,255,255,0.05)]">
-                    <IconPlay size={32} className="text-white/40 ml-2 animate-pulse" />
+                  <div className="w-20 h-20 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 backdrop-blur-sm shadow-[0_0_40px_rgba(212,160,106,0.08)]">
+                    <IconPlay size={36} className="text-[#D4A06A]/60 ml-2" />
                   </div>
-                  <p className="text-white/60 text-[14px] font-medium drop-shadow-md">
-                    {isHost ? 'Click "Change Video" to start watching' : 'Waiting for host to start a video'}
+                  <p className="text-white/50 text-[14px] font-medium drop-shadow-md mb-5">
+                    {isHost ? 'No video yet — start watching!' : 'Waiting for host to start a video...'}
                   </p>
+                  {isHost && (
+                    <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }}
+                      className="px-6 py-3 rounded-xl bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[13px] transition-all shadow-[0_4px_20px_rgba(212,160,106,0.3)] hover:shadow-[0_6px_30px_rgba(212,160,106,0.4)] hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
+                      <IconPlus size={15} /> Add Video
+                    </button>
+                  )}
                 </div>
               </div>
             )}
@@ -398,20 +447,23 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
       {/* ─── Unified Sidebar (Desktop & Mobile) ─── */}
       <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
+        {/* Mobile drag handle */}
+        <div className="sheet-handle lg:hidden" />
+
         {/* Tab Header */}
         <div className="p-2 sm:p-3 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between gap-2">
           <div className="flex items-center gap-1 bg-[var(--color-bg-0)] rounded-lg p-1 flex-1">
-            <button onClick={() => setSidebarTab('chat')} className={`relative flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-colors ${sidebarTab === 'chat' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
+            <button onClick={() => setSidebarTab('chat')} className={`relative flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold py-2 rounded-md transition-colors ${sidebarTab === 'chat' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-text-1)]'}`}>
               {sidebarTab === 'chat' && (
                 <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
               )}
-              <span className="relative z-10">Chat {messages.length > 0 && <span className="text-[9px] opacity-60 ml-0.5">{messages.length}</span>}</span>
+              <span className="relative z-10 flex items-center gap-1.5"><IconChat size={13} /> Chat {messages.length > 0 && <span className="text-[9px] opacity-50 ml-0.5">{messages.length}</span>}</span>
             </button>
-            <button onClick={() => setSidebarTab('queue')} className={`relative flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-colors relative ${sidebarTab === 'queue' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
+            <button onClick={() => setSidebarTab('queue')} className={`relative flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold py-2 rounded-md transition-colors ${sidebarTab === 'queue' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-text-1)]'}`}>
               {sidebarTab === 'queue' && (
                 <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
               )}
-              <span className="relative z-10">Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#D4A06A] font-bold">{queue.length}</span>}</span>
+              <span className="relative z-10 flex items-center gap-1.5"><IconList size={13} /> Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#D4A06A] font-bold">{queue.length}</span>}</span>
             </button>
           </div>
           <button onClick={() => setChatOpen(false)} className="lg:hidden w-7 h-7 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors shrink-0">
@@ -428,9 +480,17 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               {/* Queue List */}
               <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
                 {queue.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-3 opacity-40">
-                    <IconPlay size={24} className="text-[var(--color-text-4)]" />
-                    <p className="text-[12px] text-[var(--color-text-4)] text-center">Queue is empty.<br />Add videos to play next.</p>
+                  <div className="flex flex-col items-center justify-center h-full gap-4">
+                    <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-3)] border border-[var(--color-border)] flex items-center justify-center">
+                      <IconList size={22} className="text-[var(--color-text-4)]" />
+                    </div>
+                    <div className="text-center">
+                      <p className="text-[13px] text-[var(--color-text-2)] font-medium mb-1">Queue is empty</p>
+                      <p className="text-[11px] text-[var(--color-text-4)]">Add videos to play next in line</p>
+                    </div>
+                    <button onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }} className="px-4 py-2 rounded-lg bg-[var(--color-bg-3)] border border-[var(--color-border)] text-[var(--color-text-1)] text-[12px] font-medium hover:bg-[var(--color-bg-4)] transition-colors flex items-center gap-1.5">
+                      <IconPlus size={12} /> Add Video
+                    </button>
                   </div>
                 ) : (
                   queue.map((item, i) => (
@@ -468,6 +528,21 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           )}
         </div>
       </div>
+
+      {/* Toast Notification */}
+      <AnimatePresence>
+        {toastMsg && (
+          <motion.div
+            initial={{ opacity: 0, y: 12, scale: 0.95 }}
+            animate={{ opacity: 1, y: 0, scale: 1 }}
+            exit={{ opacity: 0, y: 8, scale: 0.95 }}
+            transition={{ duration: 0.25, type: 'spring', bounce: 0.3 }}
+            className="fixed bottom-6 left-1/2 -translate-x-1/2 z-[9999] px-5 py-3 rounded-xl bg-[var(--color-bg-2)]/90 backdrop-blur-xl border border-[var(--color-border)] shadow-[0_16px_40px_rgba(0,0,0,0.5)] text-[13px] font-medium text-[var(--color-text-0)] flex items-center gap-2 pointer-events-none"
+          >
+            <IconCheck size={14} className="text-[#5CB87A]" /> {toastMsg}
+          </motion.div>
+        )}
+      </AnimatePresence>
       
     </div>
   );

@@ -122,14 +122,18 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
       }
     }, []); // ← EMPTY DEPS: create once, destroy once
 
-    // When videoId changes, just load the new video — NO destroy/recreate
+    // When videoId changes, load the new video — NO destroy/recreate
+    const loadedIdRef = useRef(videoId); // tracks what's currently loaded
     useEffect(() => {
       if (!isReady || !ytPlayerRef.current) return;
+      // Skip if this is the same video we just loaded in the constructor
+      if (loadedIdRef.current === videoId) return;
+      loadedIdRef.current = videoId;
       try {
-        // cueVideoById exists on YT.Player but not in @types/youtube
-        (ytPlayerRef.current as unknown as { cueVideoById: (id: string) => void }).cueVideoById(videoId);
+        // loadVideoById actually initializes the video track on mobile
+        // (cueVideoById only loads thumbnail — audio plays but video stays black)
+        (ytPlayerRef.current as unknown as { loadVideoById: (id: string) => void }).loadVideoById(videoId);
         lastTimeRef.current = 0;
-        onReadyRef.current?.();
       } catch {}
     }, [videoId, isReady]);
 

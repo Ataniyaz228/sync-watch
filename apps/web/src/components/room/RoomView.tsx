@@ -380,62 +380,62 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
         {/* ── Tab Content ── */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
-          <AnimatePresence mode="wait">
 
-            {/* PLAYER TAB */}
-            {mobileTab === 'player' && (
-              <motion.div key="player" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.12 }} className="flex flex-col flex-1 min-h-0">
+          {/* PLAYER TAB — always mounted, never animated (mobile video compositor breaks with opacity:0) */}
+          <div className="flex flex-col flex-1 min-h-0"
+            style={{ display: mobileTab === 'player' ? 'flex' : 'none' }}>
 
-                {/* Video */}
-                <div className="mob-vid">
-                  {videoUrl ? (
-                    <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
-                      onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
-                      onReady={onPlayerReady} playerRef={playerRef} />
-                  ) : (
-                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
-                      <i className="ti ti-player-play" style={{ fontSize: 40, color: '#383838' }} />
-                      <p style={{ fontSize: 12, color: '#383838', textAlign: 'center', padding: '0 24px' }}>
-                        {isHost ? 'Открой вкладку URL и добавь видео' : 'Ждём хоста...'}
-                      </p>
-                    </div>
-                  )}
+            {/* Video */}
+            <div className="mob-vid">
+              {videoUrl ? (
+                <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
+                  onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
+                  onReady={onPlayerReady} playerRef={playerRef} />
+              ) : (
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                  <i className="ti ti-player-play" style={{ fontSize: 40, color: '#383838' }} />
+                  <p style={{ fontSize: 12, color: '#383838', textAlign: 'center', padding: '0 24px' }}>
+                    {isHost ? 'Открой вкладку URL и добавь видео' : 'Ждём хоста...'}
+                  </p>
                 </div>
+              )}
+            </div>
 
-                {/* Episode info row */}
-                {(videoTitle || videoUrl) && (
-                  <div className="mob-ep-row">
-                    <div className="mob-ep-l">
-                      <div className="mob-ep-title">{videoTitle || roomName}</div>
-                      <div className="mob-ep-sub">{usersCount} watching</div>
-                    </div>
-                    {queue.length > 0 && isHost && (
-                      <button className="mob-ep-next" onClick={playNext}>
-                        <i className="ti ti-player-track-next" style={{ fontSize: 11 }} />
-                        след.
-                      </button>
-                    )}
-                  </div>
+            {/* Episode info row */}
+            {(videoTitle || videoUrl) && (
+              <div className="mob-ep-row">
+                <div className="mob-ep-l">
+                  <div className="mob-ep-title">{videoTitle || roomName}</div>
+                  <div className="mob-ep-sub">{usersCount} watching</div>
+                </div>
+                {queue.length > 0 && isHost && (
+                  <button className="mob-ep-next" onClick={playNext}>
+                    <i className="ti ti-player-track-next" style={{ fontSize: 11 }} />
+                    след.
+                  </button>
                 )}
-
-                {/* Chat + input (use existing Chat component) */}
-                <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ background: '#080808' }}>
-                  <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
-                    messagesEndRef={messagesEndRef} currentUserId={userId}
-                    pauseRequest={isHost ? pauseRequest : null}
-                    onAcceptPause={acceptPauseRequest}
-                    onRejectPause={rejectPauseRequest}
-                    videoRequest={isHost ? videoRequest : null}
-                    onAcceptVideoRequest={acceptVideoRequest}
-                    onRejectVideoRequest={rejectVideoRequest}
-                    videoSuggestion={isHost ? videoSuggestion : null}
-                    onAcceptSuggestion={acceptVideoSuggestion}
-                    onRejectSuggestion={rejectVideoSuggestion}
-                  />
-                </div>
-              </motion.div>
+              </div>
             )}
+
+            {/* Chat + input */}
+            <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ background: '#080808' }}>
+              <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
+                messagesEndRef={messagesEndRef} currentUserId={userId}
+                pauseRequest={isHost ? pauseRequest : null}
+                onAcceptPause={acceptPauseRequest}
+                onRejectPause={rejectPauseRequest}
+                videoRequest={isHost ? videoRequest : null}
+                onAcceptVideoRequest={acceptVideoRequest}
+                onRejectVideoRequest={rejectVideoRequest}
+                videoSuggestion={isHost ? videoSuggestion : null}
+                onAcceptSuggestion={acceptVideoSuggestion}
+                onRejectSuggestion={rejectVideoSuggestion}
+              />
+            </div>
+          </div>
+
+          {/* QUEUE + URL TABS — animated, safe to unmount/remount (no video element) */}
+          <AnimatePresence mode="wait">
 
             {/* QUEUE TAB */}
             {mobileTab === 'queue' && (

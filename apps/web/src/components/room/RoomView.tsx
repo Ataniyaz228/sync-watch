@@ -45,7 +45,9 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'queue'>('chat');
   const [mobileTab, setMobileTab] = useState<'player' | 'queue' | 'url'>('player');
-  const [headerVisible, setHeaderVisible] = useState(true);
+  const [showSidebar, setShowSidebar] = useState(true);
+  const [desktopUrl, setDesktopUrl] = useState('');
+  const [desktopUrlLoading, setDesktopUrlLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
   const headerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
@@ -81,20 +83,6 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     return () => { u1(); u2(); };
   }, [on]);
 
-  // Auto-hide header when video is loaded (desktop only)
-  const showHeader = useCallback(() => {
-    setHeaderVisible(true);
-    if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current);
-    headerTimeoutRef.current = setTimeout(() => {
-      if (videoUrl) setHeaderVisible(false);
-    }, 3500);
-  }, [videoUrl]);
-
-  useEffect(() => {
-    if (!videoUrl) { setHeaderVisible(true); return; }
-    showHeader();
-    return () => { if (headerTimeoutRef.current) clearTimeout(headerTimeoutRef.current); };
-  }, [videoUrl, showHeader]);
 
   useEffect(() => {
     const u = on('video:url-changed', (d) => { setVideoType(d.type); setVideoUrl(d.resolvedUrl); setVideoTitle(d.title || ''); });
@@ -541,234 +529,210 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         </div>
       </div>
 
-      {/* ════════════════════════════════════
-           DESKTOP LAYOUT (hidden on mobile)
-      ════════════════════════════════════ */}
-      {/* ─── Main Content (Video Area) ─── */}
-      <div className="relative flex-1 hidden lg:flex flex-col min-w-0 min-h-0 bg-[#000]"
-        onMouseMove={showHeader} onTouchStart={showHeader}>
-        
-        {/* Top Control Bar */}
-        <header className={`absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-10 px-4 sm:px-6 flex items-start justify-between pointer-events-none transition-all duration-500 ${headerVisible ? 'opacity-100 translate-y-0' : 'lg:opacity-0 lg:-translate-y-4'}`}>
-          
-          <div className="flex flex-col gap-2 pointer-events-auto">
-            <div className="flex items-center gap-3">
-              <button onClick={() => router.push('/')} className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 backdrop-blur-md flex items-center justify-center text-white/80 hover:text-white transition-all">
-                <IconArrowRight size={14} className="rotate-180" />
-              </button>
-              <h1 className="text-[16px] sm:text-[18px] font-bold text-white tracking-tight drop-shadow-md">{roomName}</h1>
-              <span className={`text-[9px] px-2 py-0.5 rounded-full font-bold uppercase tracking-widest backdrop-blur-md ${isHost ? 'bg-[#D4A06A]/20 text-[#D4A06A] border border-[#D4A06A]/30' : 'bg-white/10 text-white/60 border border-white/10'}`}>
-                {isHost ? 'Host' : 'Viewer'}
-              </span>
-            </div>
-            
-            <div className="flex items-center gap-2 ml-11">
-              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-black/40 backdrop-blur-md border border-white/5">
-                <div className="status-dot live !bg-[#5CB87A]" />
-                <span className="text-[11px] font-medium text-white/80">{usersCount} <span className="text-white/40 hidden sm:inline">watching</span></span>
-              </div>
-              
-              <div className="flex items-center -space-x-1.5">
-                {users.slice(0, 3).map((u, i) => (
-                  <div key={u+i} className="w-6 h-6 rounded-full bg-[#A8B8C4] border border-black flex items-center justify-center text-[9px] font-bold text-white shadow-sm" title={u}>
-                    {u[0].toUpperCase()}
-                  </div>
-                ))}
-                {users.length > 3 && (
-                  <div className="w-6 h-6 rounded-full bg-white/20 backdrop-blur-md border border-black flex items-center justify-center text-[9px] font-bold text-white">
-                    +{users.length - 3}
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+      {/* ════════════════════════════════════════════
+           DESKTOP LAYOUT — Selenite Design
+      ════════════════════════════════════════════ */}
+      <div className="hidden lg:flex flex-col flex-1 min-w-0 min-h-0" style={{ background: 'var(--dt-bg)' }}>
 
-          <div className="flex items-center gap-2 pointer-events-auto">
-            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#A8B8C4] hover:bg-[#7A9BAC] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(168,184,196,0.25)]">
-              <IconPlus size={14} /> {isHost ? 'Change Video' : 'Suggest Video'}
+        {/* ── Topbar ── */}
+        <div className="dt-top">
+          <div className="dt-tl">
+            <button className="dt-icon-btn" onClick={() => router.push('/')} title="Назад">
+              <i className="ti ti-arrow-left" style={{ fontSize: 14 }} />
             </button>
-            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="sm:hidden w-9 h-9 rounded-full bg-[#A8B8C4] hover:bg-[#7A9BAC] flex items-center justify-center text-black transition-all shadow-[0_0_15px_rgba(168,184,196,0.25)]" title={isHost ? 'Change Video' : 'Suggest Video'}>
-              <IconPlus size={16} />
-            </button>
-            
+            <span className="dt-logo">watch</span>
+            <div className="dt-sep" />
+            <span className="dt-rname">{roomName}</span>
+            <span className="dt-host-b">{isHost ? 'host' : 'viewer'}</span>
+          </div>
+          <div className="dt-tr">
             {isInCall ? (
-              <div className="flex items-center bg-black/40 backdrop-blur-md border border-white/10 rounded-full p-1 shadow-lg">
-                <button onClick={toggleMute} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isMuted ? 'text-white/60 hover:text-white hover:bg-white/10' : 'bg-[#A8B8C4]/15 text-[#A8B8C4] shadow-[0_0_10px_rgba(168,184,196,0.2)]'}`} title={isMuted ? 'Unmute' : 'Mute'}>
-                  {isMuted ? <IconX size={14} /> : <IconMic size={14} />}
-                </button>
-                {peerConnected && (
-                  <div className="flex items-center gap-1.5 px-3 border-l border-white/10 ml-1">
-                    <div className="w-1.5 h-1.5 rounded-full bg-[#5CB87A] animate-pulse" />
-                    <span className="text-[10px] font-bold text-white/80 uppercase tracking-wider">Live</span>
-                  </div>
-                )}
-                <button onClick={leaveCall} className="w-8 h-8 rounded-full flex items-center justify-center text-[#E5584F] hover:bg-[#E5584F]/10 transition-colors ml-1" title="End call">
-                  <IconX size={14} />
-                </button>
+              <div className="dt-voice-p" onClick={toggleMute} title={isMuted ? 'Unmute' : 'Mute'}>
+                <div className="dt-waves">
+                  <div className="dt-w" /><div className="dt-w" />
+                  <div className="dt-w" /><div className="dt-w" />
+                </div>
+                <span className="dt-voice-txt">голос · {usersCount}</span>
+                <i className={`ti ${isMuted ? 'ti-microphone-off' : 'ti-microphone'}`}
+                   style={{ fontSize: 13, color: isMuted ? 'var(--dt-t3)' : 'var(--dt-a)' }} />
               </div>
             ) : (
-              <button onClick={joinCall} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg" title="Join voice">
-                <IconMic size={16} />
+              <button className="dt-voice-p" onClick={joinCall} title="Войти в голосовой">
+                <i className="ti ti-microphone" style={{ fontSize: 13, color: 'var(--dt-t2)' }} />
+                <span className="dt-voice-txt">голос</span>
               </button>
             )}
-
-            {/* Desktop: show all buttons. Mobile: group into More menu */}
-            <button onClick={copyLink} className="hidden sm:flex w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg" title="Copy link">
-              {copied ? <IconCheck size={15} className="text-[#5CB87A]" /> : <IconLink size={15} />}
-            </button>
-
-            <button onClick={() => router.push(`/room/${roomSlug}/history`)} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg hidden sm:flex" title="Room history">
-              <IconHistory size={15} />
-            </button>
-
-            {/* Mobile: More menu */}
-            <div className="relative sm:hidden">
-              <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg">
-                <IconMoreVertical size={16} />
+            {isInCall && (
+              <button className="dt-icon-btn" onClick={leaveCall} title="Выйти из звонка"
+                style={{ color: '#E5584F' }}>
+                <i className="ti ti-phone-off" style={{ fontSize: 13 }} />
               </button>
-              <AnimatePresence>
-                {showMoreMenu && (
-                  <motion.div initial={{ opacity: 0, scale: 0.9, y: -4 }} animate={{ opacity: 1, scale: 1, y: 0 }} exit={{ opacity: 0, scale: 0.9, y: -4 }}
-                    transition={{ duration: 0.15 }} className="more-menu" onClick={() => setShowMoreMenu(false)}>
-                    <button onClick={copyLink} className="more-menu-item">
-                      <IconLink size={14} /> {copied ? 'Copied!' : 'Copy Link'}
-                    </button>
-                    <button onClick={() => router.push(`/room/${roomSlug}/history`)} className="more-menu-item">
-                      <IconHistory size={14} /> Room History
-                    </button>
-                  </motion.div>
-                )}
-              </AnimatePresence>
-            </div>
-
-            {/* Mobile Chat Toggle */}
-            <button onClick={() => setChatOpen(true)} className="lg:hidden w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg relative">
-              <IconChat size={15} />
-              {messages.length > 0 && <div className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-[#A8B8C4] border-2 border-black" />}
+            )}
+            <button className="dt-icon-btn" onClick={copyLink} title="Скопировать ссылку">
+              {copied
+                ? <i className="ti ti-check" style={{ fontSize: 14, color: 'var(--dt-a)' }} />
+                : <i className="ti ti-link" style={{ fontSize: 14 }} />}
             </button>
-          </div>
-        </header>
-
-        {/* Video Player Container */}
-        <div className={`relative flex items-center justify-center px-0 sm:px-4 lg:px-8 flex-1 ${videoUrl ? 'pt-20 pb-4' : 'pt-0 pb-0'}`}>
-          {videoUrl ? (
-            /* Video loaded — standard aspect-video container */
-            <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
-              <VideoPlayer
-                type={videoType}
-                url={videoUrl}
-                title={videoTitle}
-                onPlay={onLocalPlay}
-                onPause={onLocalPause}
-                onSeeked={onLocalSeek}
-                playerRef={playerRef}
-              />
+            <button className="dt-icon-btn" onClick={() => router.push(`/room/${roomSlug}/history`)} title="История">
+              <i className="ti ti-history" style={{ fontSize: 14 }} />
+            </button>
+            <div className="dt-avs">
+              {users.slice(0, 4).map((u, i) => {
+                const bgs = ['var(--dt-a)','#1e2e3a','#2a1e3a','#1e3a2a'];
+                const fgs = ['#0d1a20','#6a98b8','#8a6ab8','#6ab88a'];
+                return (
+                  <div key={u + i} className="dt-av"
+                    style={{ background: bgs[i % 4], color: fgs[i % 4], marginLeft: i > 0 ? -6 : 0, zIndex: 4 - i }}
+                    title={u}>{u[0].toUpperCase()}</div>
+                );
+              })}
             </div>
-          ) : (
-            /* Empty State — fills entire area, centered */
-            <div className="flex items-center justify-center w-full h-full">
-              <div className="text-center">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 backdrop-blur-sm shadow-[0_0_40px_rgba(168,184,196,0.08)]">
-                  <IconPlay size={36} className="text-[#A8B8C4]/60 ml-2 sm:scale-125" />
+          </div>
+        </div>
+
+        {/* ── Main Row ── */}
+        <div className="dt-main">
+
+          {/* ── Left panel ── */}
+          <div className="dt-left">
+            <div className="dt-vid">
+              {videoUrl ? (
+                <div style={{ position: 'absolute', inset: 0 }}>
+                  <VideoPlayer
+                    type={videoType} url={videoUrl} title={videoTitle}
+                    onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
+                    playerRef={playerRef}
+                  />
                 </div>
-                <p className="text-white/40 text-[14px] sm:text-[16px] font-medium drop-shadow-md mb-5">
-                  {isHost ? 'No video yet — start watching!' : 'Waiting for host to start a video...'}
-                </p>
-                {isHost && (
-                  <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }}
-                    className="px-6 py-3 rounded-xl bg-[#A8B8C4] hover:bg-[#7A9BAC] text-black font-semibold text-[13px] transition-all shadow-[0_4px_20px_rgba(168,184,196,0.25)] hover:shadow-[0_6px_30px_rgba(168,184,196,0.3)] hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
-                    <IconPlus size={15} /> Add Video
+              ) : (
+                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                  <i className="ti ti-device-tv" style={{ fontSize: 64, color: '#ffffff05' }} />
+                  <p style={{ fontSize: 13, color: 'var(--dt-t2)' }}>
+                    {isHost ? 'Вставь ссылку ниже чтобы начать' : 'Ждём хоста...'}
+                  </p>
+                </div>
+              )}
+            </div>
+
+            <div className="dt-ep-bar">
+              <div className="dt-ep-thumb"><i className="ti ti-device-tv" /></div>
+              <div className="dt-ep-info">
+                <div className="dt-ep-title">{videoTitle || (videoUrl ? 'Видео загружено' : 'Ничего не играет')}</div>
+                <div className="dt-ep-sub">{usersCount} смотрят</div>
+              </div>
+              <div className="dt-ep-btns">
+                <button className={`dt-ep-btn${showSidebar ? ' acc' : ''}`}
+                  onClick={() => setShowSidebar(s => !s)}>
+                  <i className="ti ti-layout-sidebar-right" style={{ fontSize: 11 }} />чат
+                </button>
+                <button className="dt-ep-btn" onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }}>
+                  <i className="ti ti-playlist" style={{ fontSize: 11 }} />
+                  {queue.length > 0 ? `очередь (${queue.length})` : 'очередь'}
+                </button>
+                {queue.length > 0 && isHost && (
+                  <button className="dt-ep-btn acc" onClick={playNext}>
+                    <i className="ti ti-player-track-next" style={{ fontSize: 11 }} />след.
                   </button>
                 )}
               </div>
             </div>
-          )}
-        </div>
-        
 
-      </div>
-
-      {/* ─── Unified Sidebar (Desktop only) ─── */}
-      <div className={`hidden lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 lg:flex-none shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
-        {/* Mobile drag handle */}
-        <div className="sheet-handle lg:hidden" />
-
-        {/* Tab Header */}
-        <div className="p-2 sm:p-3 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 bg-[var(--color-bg-0)] rounded-lg p-1 flex-1">
-            <button onClick={() => setSidebarTab('chat')} className={`relative flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold py-2 rounded-md transition-colors ${sidebarTab === 'chat' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-text-1)]'}`}>
-              {sidebarTab === 'chat' && (
-                <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5"><IconChat size={13} /> Chat {messages.length > 0 && <span className="text-[9px] opacity-50 ml-0.5">{messages.length}</span>}</span>
-            </button>
-            <button onClick={() => setSidebarTab('queue')} className={`relative flex-1 flex items-center justify-center gap-1.5 text-[13px] font-semibold py-2 rounded-md transition-colors ${sidebarTab === 'queue' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-2)] hover:text-[var(--color-text-1)]'}`}>
-              {sidebarTab === 'queue' && (
-                <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
-              )}
-              <span className="relative z-10 flex items-center gap-1.5"><IconList size={13} /> Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#A8B8C4] font-bold">{queue.length}</span>}</span>
-            </button>
+            <form className="dt-url-bar" onSubmit={async (e) => {
+              e.preventDefault();
+              const u = desktopUrl.trim();
+              if (!u || desktopUrlLoading) return;
+              setDesktopUrlLoading(true);
+              try {
+                const { apiRequest } = await import('@/lib/utils');
+                const result = await apiRequest<import('@/types').VideoResolution>('/api/videos/resolve', {
+                  method: 'POST', body: JSON.stringify({ url: u }),
+                });
+                handleVideoResolved(result);
+                setDesktopUrl('');
+              } catch (err) {
+                setToastMsg(err instanceof Error ? err.message : 'Не удалось загрузить');
+                setTimeout(() => setToastMsg(''), 3000);
+              } finally {
+                setDesktopUrlLoading(false);
+              }
+            }}>
+              <i className="ti ti-link" style={{ fontSize: 13, color: 'var(--dt-t3)', flexShrink: 0 }} />
+              <input
+                type="url" value={desktopUrl}
+                onChange={e => setDesktopUrl(e.target.value)}
+                placeholder="youtube, vk, m3u8, mp4 и любые другие ссылки..."
+                autoComplete="off"
+                className="dt-url-inp"
+                style={{ flex: 1 }}
+                id="dt-url-input"
+              />
+              <button type="submit" className="dt-url-go" disabled={!desktopUrl.trim() || desktopUrlLoading}>
+                {desktopUrlLoading
+                  ? <div style={{ width: 12, height: 12, border: '2px solid rgba(10,21,26,.25)', borderTop: '2px solid #0a151a', borderRadius: '50%', animation: 'spin .6s linear infinite' }} />
+                  : <><i className="ti ti-player-play" style={{ fontSize: 11 }} />загрузить</>
+                }
+              </button>
+            </form>
           </div>
-          <button onClick={() => setChatOpen(false)} className="lg:hidden w-7 h-7 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors shrink-0">
-            <IconX size={12} />
-          </button>
-        </div>
 
-        {/* Tab Content */}
-        <div className="flex-1 overflow-hidden relative">
-          {sidebarTab === 'chat' ? (
-            <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage} messagesEndRef={messagesEndRef} currentUserId={userId} />
-          ) : (
-            <div className="flex flex-col h-full">
-              {/* Queue List */}
-              <div className="flex-1 overflow-y-auto p-3 space-y-2 min-h-0">
-                {queue.length === 0 ? (
-                  <div className="flex flex-col items-center justify-center h-full gap-4">
-                    <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-3)] border border-[var(--color-border)] flex items-center justify-center">
-                      <IconList size={22} className="text-[var(--color-text-4)]" />
-                    </div>
-                    <div className="text-center">
-                      <p className="text-[13px] text-[var(--color-text-2)] font-medium mb-1">Queue is empty</p>
-                      <p className="text-[11px] text-[var(--color-text-4)]">Add videos to play next in line</p>
-                    </div>
-                    <button onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }} className="px-4 py-2 rounded-lg bg-[var(--color-bg-3)] border border-[var(--color-border)] text-[var(--color-text-1)] text-[12px] font-medium hover:bg-[var(--color-bg-4)] transition-colors flex items-center gap-1.5">
-                      <IconPlus size={12} /> Add Video
-                    </button>
-                  </div>
-                ) : (
-                  queue.map((item, i) => (
-                    <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-bg-0)] border border-[var(--color-border)] group hover:border-[var(--color-border-hover)] transition-all">
-                      <div className="w-7 h-7 rounded-lg bg-[var(--color-bg-3)] flex items-center justify-center text-[11px] font-bold text-[var(--color-text-3)] shrink-0">
-                        {i + 1}
-                      </div>
-                      <div className="min-w-0 flex-1">
-                        <p className="text-[13px] font-medium text-[var(--color-text-0)] truncate">{item.title || item.originalUrl}</p>
-                        <p className="text-[10px] text-[var(--color-text-4)]">
-                          Added by <span className="text-[var(--color-text-2)]">{item.addedByName}</span>
-                        </p>
-                      </div>
-                      {isHost && (
-                        <button onClick={() => removeFromQueue(item.id)} className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--color-text-4)] hover:text-[var(--color-error)] hover:bg-[var(--color-error)]/10 transition-all opacity-0 group-hover:opacity-100 shrink-0">
-                          <IconX size={10} />
-                        </button>
-                      )}
-                    </div>
-                  ))
-                )}
-              </div>
-              {/* Queue Controls */}
-              <div className="p-3 border-t border-[var(--color-border)] space-y-2 flex-shrink-0">
-                {queue.length > 0 && isHost && (
-                  <button onClick={playNext} className="w-full py-2.5 rounded-xl bg-[#D4A06A] text-black text-[13px] font-semibold hover:bg-[#c4885a] transition-colors flex items-center justify-center gap-2">
-                    <IconPlay size={14} /> Play Next
-                  </button>
-                )}
-                <button onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }} className="w-full py-2.5 rounded-xl bg-[var(--color-bg-3)] text-[var(--color-text-1)] text-[13px] font-medium hover:bg-[var(--color-bg-4)] transition-colors flex items-center justify-center gap-2 border border-[var(--color-border)]">
-                  <IconPlus size={14} /> Add to Queue
+          {showSidebar && (
+            <div className="dt-right">
+              <div className="dt-sb-tabs">
+                <button className={`dt-sb-tab${sidebarTab === 'chat' ? ' on' : ''}`}
+                  onClick={() => setSidebarTab('chat')}>
+                  чат{messages.length > 0 && <span style={{ marginLeft: 5, fontSize: 9, opacity: .5 }}>{messages.length}</span>}
+                </button>
+                <button className={`dt-sb-tab${sidebarTab === 'queue' ? ' on' : ''}`}
+                  onClick={() => setSidebarTab('queue')}>
+                  очередь{queue.length > 0 && <span style={{ marginLeft: 5, color: 'var(--dt-a)', fontWeight: 700, fontSize: 9 }}>{queue.length}</span>}
                 </button>
               </div>
+              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+                {sidebarTab === 'chat' ? (
+                  <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
+                    messagesEndRef={messagesEndRef} currentUserId={userId} />
+                ) : (
+                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
+                    <div style={{ flex: 1, overflowY: 'auto' }}>
+                      {queue.length === 0 ? (
+                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, padding: 24 }}>
+                          <i className="ti ti-playlist" style={{ fontSize: 28, color: 'var(--dt-t3)' }} />
+                          <p style={{ fontSize: 11, color: 'var(--dt-t2)' }}>Очередь пуста</p>
+                          <button className="dt-ep-btn" onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }}>
+                            <i className="ti ti-plus" style={{ fontSize: 11 }} />добавить
+                          </button>
+                        </div>
+                      ) : (
+                        queue.map((item, i) => (
+                          <div key={item.id} className="dt-q-item">
+                            <div className="dt-q-num">{i + 1}</div>
+                            <div className="dt-q-info">
+                              <div className="dt-q-title">{item.title || item.originalUrl}</div>
+                              <div className="dt-q-by">от {item.addedByName}</div>
+                            </div>
+                            {isHost && (
+                              <button onClick={() => removeFromQueue(item.id)}
+                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dt-t3)', fontSize: 12, padding: 4 }}>
+                                <i className="ti ti-x" />
+                              </button>
+                            )}
+                          </div>
+                        ))
+                      )}
+                    </div>
+                    {queue.length > 0 && isHost && (
+                      <div style={{ padding: '8px 12px', borderTop: '1px solid var(--dt-br)', flexShrink: 0 }}>
+                        <button className="dt-ep-btn acc" style={{ width: '100%', justifyContent: 'center', padding: '7px 0' }} onClick={playNext}>
+                          <i className="ti ti-player-track-next" style={{ fontSize: 11 }} />Play Next
+                        </button>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
             </div>
           )}
+
         </div>
       </div>
 

@@ -1371,11 +1371,12 @@ body {
 
 /* ── video area ── */
 .mob-vid {
-  width: 100%; aspect-ratio: 16/9;
+  width: 100%;
+  padding-top: 56.25%; /* 16:9 via padding — works on all mobile browsers */
   background: #0a0a0a;
   position: relative;
-  display: flex; align-items: center; justify-content: center;
   flex-shrink: 0;
+  overflow: hidden;
 }
 
 /* ── ep info ── */
@@ -1975,7 +1976,6 @@ body {
 }
 .dt-vid {
   flex: 1; background: #060606; position: relative;
-  display: flex; align-items: center; justify-content: center;
   min-height: 0; overflow: hidden;
 }
 

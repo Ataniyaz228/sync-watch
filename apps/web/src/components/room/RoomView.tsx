@@ -550,7 +550,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                   />
                 </div>
               ) : (
-                <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 14 }}>
+                <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>
                   <i className="ti ti-device-tv" style={{ fontSize: 64, color: '#ffffff05' }} />
                   <p style={{ fontSize: 13, color: 'var(--dt-t2)' }}>
                     {isHost ? 'Вставь ссылку ниже чтобы начать' : 'Ждём хоста...'}

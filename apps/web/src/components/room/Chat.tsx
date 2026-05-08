@@ -91,11 +91,12 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
     return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
   }, [gifSearch, showGifPicker, fetchGifs]);
 
-  // Sound notification on new messages from others
+  // Sound notification on new messages from others — only in fullscreen
   useEffect(() => {
     const prev = prevMsgCountRef.current;
     prevMsgCountRef.current = messages.length;
     if (messages.length <= prev) return;
+    if (!document.fullscreenElement) return; // only notify in fullscreen
     const newMsgs = messages.slice(prev);
     const hasExternal = newMsgs.some(m => !m.isSystem && m.type !== 'system' && m.userId !== currentUserId);
     if (hasExternal) playNotifSound();

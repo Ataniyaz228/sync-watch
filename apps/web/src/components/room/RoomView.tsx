@@ -92,8 +92,15 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     const u = on('video:sync-state', (s: RoomState) => {
       if (s.type && s.resolvedUrl) { setVideoType(s.type); setVideoUrl(s.resolvedUrl); setVideoTitle(s.title || ''); }
     });
-    return u;
-  }, [on]);
+
+    // Race condition fix: the server may send sync-state before this handler is registered.
+    // Re-request state after mount to catch any missed events.
+    const t1 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 500);
+    const t2 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 2000);
+    const t3 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 5000);
+
+    return () => { u(); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+  }, [on, emit, roomSlug]);
 
   // Auto-load video from history query params
   useEffect(() => {

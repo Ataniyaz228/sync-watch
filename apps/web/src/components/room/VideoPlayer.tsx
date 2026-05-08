@@ -31,6 +31,7 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
     return null;
   }
 
+  // Single absolute container — player fills it directly, no extra nesting
   return (
     <div style={{ position: 'absolute', inset: 0, background: '#000', overflow: 'hidden' }}>
       {title && (
@@ -42,12 +43,10 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
           <p style={{ fontSize: 12, color: 'rgba(255,255,255,0.8)', fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', margin: 0 }}>{title}</p>
         </div>
       )}
-      <div style={{ position: 'absolute', inset: 0 }}>
-        {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
-        {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
-        {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
-        {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
-      </div>
+      {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
+      {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
+      {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
+      {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
     </div>
   );
 }

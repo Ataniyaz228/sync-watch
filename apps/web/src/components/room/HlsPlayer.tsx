@@ -43,17 +43,12 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
         const hls = new Hls({
           enableWorker: true,
           lowLatencyMode: true,
-          xhrSetup: (xhr) => {
-            // Don't send credentials — avoids CORS preflight issues
-            xhr.withCredentials = false;
-          },
+          xhrSetup: (xhr) => { xhr.withCredentials = false; },
         });
-
         hls.loadSource(src);
         hls.attachMedia(video);
         hlsRef.current = hls;
 
-        // Use HLS-specific ready event — more reliable than <video> canplay
         hls.on(Hls.Events.MANIFEST_PARSED, () => {
           onReadyRef.current?.();
         });
@@ -82,17 +77,14 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
           hlsRef.current = null;
         };
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
-        // iOS Safari — native HLS support
+        // iOS Safari — native HLS
         video.src = src;
         const handleCanPlay = () => onReadyRef.current?.();
         video.addEventListener('canplay', handleCanPlay, { once: true });
-        return () => {
-          video.removeEventListener('canplay', handleCanPlay);
-        };
+        return () => { video.removeEventListener('canplay', handleCanPlay); };
       }
     }, [src]);
 
-    // Stable event listeners via refs
     useEffect(() => {
       const v = videoRef.current;
       if (!v) return;
@@ -109,12 +101,19 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
       };
     }, []);
 
+    // Use absolute positioning — reliable on mobile (no width/height % issues)
     return (
       <video
         ref={videoRef}
         controls
         playsInline
-        style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
+        style={{
+          position: 'absolute',
+          top: 0, left: 0, right: 0, bottom: 0,
+          width: '100%', height: '100%',
+          objectFit: 'contain',
+          background: '#000',
+        }}
       />
     );
   }

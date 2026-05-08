@@ -1588,6 +1588,87 @@ body {
 .mob-hi-when { font-size: 10px; color: var(--mt3); margin-top: 1px; }
 .mob-hi-arr { font-size: 14px; color: var(--mt3); }
 
+/* ═══════════════════════════════════════════════════
+   .mob Chat component overrides — exact Selenite spec
+   ═══════════════════════════════════════════════════ */
+
+/* Input form row */
+.mob .chat-form {
+  padding: 8px 14px 10px !important;
+  border-top: 1px solid #1a1a1a !important;
+  background: #080808 !important;
+}
+
+/* GIF button */
+.mob .chat-gif-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  border-radius: 8px !important;
+  background: #161616 !important;
+  border: 1px solid #1a1a1a !important;
+  font-size: 9px !important;
+  color: #777 !important;
+}
+
+/* Text input */
+.mob .chat-msg-input {
+  background: #161616 !important;
+  border: 1px solid #1a1a1a !important;
+  border-radius: 22px !important;
+  padding: 8px 14px !important;
+  font-size: 12px !important;
+  color: #777 !important;
+  height: auto !important;
+}
+.mob .chat-msg-input::placeholder {
+  color: #555 !important;
+}
+.mob .chat-msg-input:focus {
+  border-color: rgba(168,184,196,0.35) !important;
+  color: #efefef !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+/* Send button */
+.mob .chat-send-btn {
+  width: 32px !important;
+  height: 32px !important;
+  min-width: 32px !important;
+  border-radius: 50% !important;
+  background: #A8B8C4 !important;
+  color: #0d1a20 !important;
+  box-shadow: none !important;
+}
+.mob .chat-send-btn:disabled {
+  background: #1c1c1c !important;
+  color: #383838 !important;
+}
+
+/* Message bubbles */
+.mob .chat-bubble {
+  border-radius: 14px 14px 14px 3px !important;
+  background: #161616 !important;
+  border: none !important;
+  padding: 0 !important;
+}
+.mob .chat-bubble > div {
+  padding: 7px 11px !important;
+  font-size: 12px !important;
+  line-height: 1.45 !important;
+  color: #efefef !important;
+}
+.mob .chat-bubble.chat-bubble-own {
+  border-radius: 14px 14px 3px 14px !important;
+  background: rgba(168,184,196,0.09) !important;
+  border: 1px solid rgba(168,184,196,0.19) !important;
+}
+
+/* Messages area background */
+.mob .flex-1.overflow-y-auto {
+  background: #080808 !important;
+}
 
 /* ═══ Mobile Bottom Tab Bar ═══ */
 

@@ -99,10 +99,10 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
             <motion.div key={msg.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15 }} className="py-0.5">
               {msg.isSystem || msg.type === 'system' ? (
-                <div className="flex items-center gap-3 py-2 my-1 opacity-80">
-                  <div className="h-px bg-gradient-to-r from-transparent to-[#D4A06A]/30 flex-1" />
-                  <span className="text-[10px] font-bold uppercase tracking-widest text-[#D4A06A]">{msg.content}</span>
-                  <div className="h-px bg-gradient-to-l from-transparent to-[#D4A06A]/30 flex-1" />
+                <div className="flex items-center gap-3 py-1 my-0.5 opacity-60">
+                  <div className="h-px bg-gradient-to-r from-transparent to-[var(--color-text-4)]/30 flex-1" />
+                  <span className="text-[9px] italic font-medium tracking-wide text-[var(--color-text-3)]">{msg.content}</span>
+                  <div className="h-px bg-gradient-to-l from-transparent to-[var(--color-text-4)]/30 flex-1" />
                 </div>
               ) : (
                 <Bubble msg={msg} isOwn={msg.userId === currentUserId} onReact={onReact}
@@ -184,7 +184,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
           <div className="flex-1 relative">
             <input ref={inputRef} type="text" value={input} onChange={(e) => setInput(e.target.value)}
               placeholder="Type a message..." autoComplete="off"
-              className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 focus:shadow-[0_0_15px_rgba(212,160,106,0.1)] rounded-xl py-3 px-4 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none" maxLength={500} id="chat-input" />
+              className="w-full bg-[var(--color-bg-2)] border border-[var(--color-border)] focus:ring-1 focus:ring-[#D4A06A]/50 focus:bg-[var(--color-bg-0)] rounded-xl py-3 px-4 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none" maxLength={500} id="chat-input" />
           </div>
           <button type="submit" disabled={!input.trim()} className={`w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0 ${input.trim() ? 'bg-[#D4A06A] text-black shadow-[0_0_10px_rgba(212,160,106,0.4)] hover:scale-105' : 'bg-[var(--color-bg-3)] text-[var(--color-text-4)]'}`} id="chat-send-btn">
             <IconSend size={15} />

@@ -365,7 +365,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         </header>
 
         {/* Video Player Container */}
-        <div className="flex-1 relative flex items-center justify-center pt-20 pb-4 px-0 sm:px-4">
+        <div className="flex-1 relative flex items-center justify-center pt-20 pb-4 px-0 sm:px-4 lg:px-8">
           <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
             <VideoPlayer
               type={videoType}
@@ -381,10 +381,10 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             {!videoUrl && (
               <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
                 <div className="text-center">
-                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm">
-                    <IconPlay size={32} className="text-white/20 ml-2" />
+                  <div className="w-16 h-16 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-4 backdrop-blur-sm shadow-[0_0_30px_rgba(255,255,255,0.05)]">
+                    <IconPlay size={32} className="text-white/40 ml-2 animate-pulse" />
                   </div>
-                  <p className="text-white/40 text-[14px]">
+                  <p className="text-white/60 text-[14px] font-medium drop-shadow-md">
                     {isHost ? 'Click "Change Video" to start watching' : 'Waiting for host to start a video'}
                   </p>
                 </div>
@@ -400,12 +400,18 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
         {/* Tab Header */}
         <div className="p-2 sm:p-3 border-b border-[var(--color-border)] bg-[var(--color-bg-1)]/80 backdrop-blur-md flex items-center justify-between gap-2">
-          <div className="flex items-center gap-1 bg-[var(--color-bg-0)] rounded-lg p-0.5 flex-1">
-            <button onClick={() => setSidebarTab('chat')} className={`flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-all ${sidebarTab === 'chat' ? 'bg-[var(--color-bg-3)] text-[var(--color-text-0)] shadow-sm' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
-              Chat {messages.length > 0 && <span className="text-[9px] opacity-60 ml-0.5">{messages.length}</span>}
+          <div className="flex items-center gap-1 bg-[var(--color-bg-0)] rounded-lg p-1 flex-1">
+            <button onClick={() => setSidebarTab('chat')} className={`relative flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-colors ${sidebarTab === 'chat' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
+              {sidebarTab === 'chat' && (
+                <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+              )}
+              <span className="relative z-10">Chat {messages.length > 0 && <span className="text-[9px] opacity-60 ml-0.5">{messages.length}</span>}</span>
             </button>
-            <button onClick={() => setSidebarTab('queue')} className={`flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-all relative ${sidebarTab === 'queue' ? 'bg-[var(--color-bg-3)] text-[var(--color-text-0)] shadow-sm' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
-              Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#D4A06A] font-bold">{queue.length}</span>}
+            <button onClick={() => setSidebarTab('queue')} className={`relative flex-1 text-[12px] font-semibold py-1.5 rounded-md transition-colors relative ${sidebarTab === 'queue' ? 'text-[var(--color-text-0)]' : 'text-[var(--color-text-4)] hover:text-[var(--color-text-2)]'}`}>
+              {sidebarTab === 'queue' && (
+                <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
+              )}
+              <span className="relative z-10">Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#D4A06A] font-bold">{queue.length}</span>}</span>
             </button>
           </div>
           <button onClick={() => setChatOpen(false)} className="lg:hidden w-7 h-7 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors shrink-0">

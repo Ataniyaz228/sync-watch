@@ -204,7 +204,7 @@ body {
 .video-container {
   position: relative;
   width: 100%;
-  padding-top: 56.25%;
+  height: 100%;
   background: #000;
   border-radius: 10px;
   overflow: hidden;
@@ -217,11 +217,8 @@ body {
 
 .video-container video { object-fit: contain; }
 
-/* Inside mob-vid (which already has aspect-ratio), skip the padding-top trick */
+/* Inside mob-vid, remove border-radius */
 .mob-vid .video-container {
-  padding-top: 0;
-  position: absolute;
-  inset: 0;
   border-radius: 0;
 }
 

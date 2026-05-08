@@ -33,7 +33,7 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
   }
 
   return (
-    <div className="relative w-full h-full">
+    <div className="absolute inset-0">
       {title && (
         <div className="absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/60 to-transparent px-4 py-2.5 rounded-t-[10px]">
           <p className="text-xs text-white/80 font-medium truncate">{title}</p>

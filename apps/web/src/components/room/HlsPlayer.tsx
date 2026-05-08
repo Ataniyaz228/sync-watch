@@ -39,40 +39,60 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
       const video = videoRef.current;
       if (!video || !src) return;
 
-      // Fire onReady when video has enough data to seek
-      const handleCanPlay = () => onReadyRef.current?.();
-      video.addEventListener('canplay', handleCanPlay, { once: true });
-
       if (Hls.isSupported()) {
-        const hls = new Hls({ enableWorker: true, lowLatencyMode: true });
+        const hls = new Hls({
+          enableWorker: true,
+          lowLatencyMode: true,
+          xhrSetup: (xhr) => {
+            // Don't send credentials — avoids CORS preflight issues
+            xhr.withCredentials = false;
+          },
+        });
+
         hls.loadSource(src);
         hls.attachMedia(video);
         hlsRef.current = hls;
 
+        // Use HLS-specific ready event — more reliable than <video> canplay
+        hls.on(Hls.Events.MANIFEST_PARSED, () => {
+          onReadyRef.current?.();
+        });
+
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
             switch (data.type) {
-              case Hls.ErrorTypes.NETWORK_ERROR: hls.startLoad(); break;
-              case Hls.ErrorTypes.MEDIA_ERROR: hls.recoverMediaError(); break;
-              default: hls.destroy(); break;
+              case Hls.ErrorTypes.NETWORK_ERROR:
+                console.warn('[HLS] Network error, retrying...');
+                hls.startLoad();
+                break;
+              case Hls.ErrorTypes.MEDIA_ERROR:
+                console.warn('[HLS] Media error, recovering...');
+                hls.recoverMediaError();
+                break;
+              default:
+                console.error('[HLS] Fatal error:', data);
+                hls.destroy();
+                break;
             }
           }
         });
 
         return () => {
-          video.removeEventListener('canplay', handleCanPlay);
           hls.destroy();
           hlsRef.current = null;
         };
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // iOS Safari — native HLS support
         video.src = src;
+        const handleCanPlay = () => onReadyRef.current?.();
+        video.addEventListener('canplay', handleCanPlay, { once: true });
         return () => {
           video.removeEventListener('canplay', handleCanPlay);
         };
       }
     }, [src]);
 
-    // Stable event listeners
+    // Stable event listeners via refs
     useEffect(() => {
       const v = videoRef.current;
       if (!v) return;
@@ -94,7 +114,6 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
         ref={videoRef}
         controls
         playsInline
-        crossOrigin="anonymous"
         style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
       />
     );

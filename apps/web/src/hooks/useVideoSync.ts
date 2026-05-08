@@ -80,7 +80,7 @@ export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideo
     return unsub;
   }, [on, getPlayer]);
 
-  // Periodic sync correction from host — auto-correct drift > 3s
+  // Periodic sync correction from host — auto-correct drift > 1.5s
   useEffect(() => {
     if (isHost) return; // host doesn't correct itself
     const unsub = on('video:sync-correction', (data) => {
@@ -88,8 +88,8 @@ export function useVideoSync({ on, emit, roomSlug, getPlayer, isHost }: UseVideo
       if (!player) return;
       const localTime = player.getCurrentTime();
       const drift = Math.abs(localTime - data.currentTime);
-      // Only correct if drift is significant (> 3 seconds)
-      if (drift > 3) {
+      // Correct if drift exceeds threshold
+      if (drift > SYNC_THRESHOLD) {
         setSyncing(true);
         player.seek(data.currentTime);
         setTimeout(() => { isSyncingRef.current = false; }, SYNC_DEBOUNCE);

@@ -161,7 +161,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       if (currentTime > 0) {
         emit('video:sync-position', { roomSlug, currentTime, isPlaying: player.isPlaying() });
       }
-    }, 10000);
+    }, 5000);
     return () => clearInterval(interval);
   }, [isHost, videoUrl, emit, roomSlug]);
 

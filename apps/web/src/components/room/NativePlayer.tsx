@@ -38,21 +38,26 @@ const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
       if (!v) return;
 
       const handleCanPlay = () => onReadyRef.current?.();
-      v.addEventListener('canplay', handleCanPlay, { once: true });
-
       const handlePlay = () => onPlayRef.current?.(v.currentTime);
       const handlePause = () => onPauseRef.current?.(v.currentTime);
       const handleSeeked = () => onSeekedRef.current?.(v.currentTime);
+      const handleError = (e: Event) => {
+        const video = e.target as HTMLVideoElement;
+        console.error('[NativePlayer] Error:', video.error?.message, 'Code:', video.error?.code);
+      };
 
+      v.addEventListener('canplay', handleCanPlay, { once: true });
       v.addEventListener('play', handlePlay);
       v.addEventListener('pause', handlePause);
       v.addEventListener('seeked', handleSeeked);
+      v.addEventListener('error', handleError);
 
       return () => {
         v.removeEventListener('canplay', handleCanPlay);
         v.removeEventListener('play', handlePlay);
         v.removeEventListener('pause', handlePause);
         v.removeEventListener('seeked', handleSeeked);
+        v.removeEventListener('error', handleError);
       };
     }, []);
 
@@ -62,7 +67,6 @@ const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
         src={src}
         controls
         playsInline
-        crossOrigin="anonymous"
         style={{ width: '100%', height: '100%', objectFit: 'contain', background: '#000' }}
       />
     );

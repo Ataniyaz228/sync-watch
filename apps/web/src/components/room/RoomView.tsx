@@ -316,110 +316,119 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </AnimatePresence>
 
       {/* ════════════════════════════════════
-           MOBILE LAYOUT (hidden on lg+)
+           MOBILE LAYOUT — Selenite Design
       ════════════════════════════════════ */}
-      <div className="flex lg:hidden flex-col flex-1 min-h-0 overflow-hidden">
+      <div className="mob flex lg:hidden flex-col flex-1 min-h-0 overflow-hidden">
 
-        {/* ── Mobile Header ── */}
-        <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-bg-1)] border-b border-[var(--color-border)] shrink-0">
-          <div className="flex items-center gap-2.5">
-            <button onClick={() => router.push('/')} className="w-8 h-8 rounded-full bg-[var(--color-bg-3)] flex items-center justify-center text-[var(--color-text-2)]">
-              <IconArrowRight size={14} className="rotate-180" />
+        {/* ── Topbar ── */}
+        <div className="mob-top">
+          <div className="mob-top-l">
+            <button className="mob-back" onClick={() => router.push('/')}>
+              <i className="ti ti-arrow-left" style={{ fontSize: 14 }} />
             </button>
-            <div>
-              <h1 className="text-[14px] font-semibold tracking-tight leading-none">{roomName}</h1>
-              <div className="flex items-center gap-1.5 mt-0.5">
-                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
-                <span className="text-[10px] text-[var(--color-text-4)]">{usersCount} watching</span>
-                {isHost && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#D4A06A]/15 text-[#D4A06A] border border-[#D4A06A]/25 font-bold uppercase tracking-wider">Host</span>}
-              </div>
-            </div>
+            <span className="mob-rname">{roomName}</span>
+            {isHost && (
+              <span style={{ fontSize: 9, padding: '2px 7px', borderRadius: 20, border: '1px solid rgba(168,184,196,0.2)', color: '#A8B8C4', fontWeight: 600, letterSpacing: '0.05em', textTransform: 'uppercase' }}>
+                HOST
+              </span>
+            )}
           </div>
 
-          <div className="flex items-center gap-2">
-            {/* User avatars */}
-            <div className="flex -space-x-1.5">
-              {users.slice(0, 2).map((u, i) => (
-                <div key={u+i} className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4A06A] to-[#8c6742] border-2 border-[var(--color-bg-1)] flex items-center justify-center text-[9px] font-bold text-white" title={u}>
-                  {u[0].toUpperCase()}
-                </div>
-              ))}
-              {users.length > 2 && (
-                <div className="w-7 h-7 rounded-full bg-[var(--color-bg-3)] border-2 border-[var(--color-bg-1)] flex items-center justify-center text-[9px] font-bold text-[var(--color-text-3)]">+{users.length - 2}</div>
-              )}
-            </div>
-
+          <div className="mob-top-r">
             {/* Voice pill */}
             <button
+              className={`mob-vpill${isInCall ? ' active' : ''}`}
               onClick={isInCall ? leaveCall : joinCall}
-              className={`voice-pill ${isInCall ? 'active' : ''} ${isInCall && isMuted ? 'voice-pill-muted' : ''}`}
             >
               {isInCall ? (
                 <>
-                  <div className="voice-waves">
-                    <div className="voice-wave" /><div className="voice-wave" />
-                    <div className="voice-wave" /><div className="voice-wave" />
+                  <div className="mob-waves">
+                    <div className={`mob-wave${isMuted ? ' opacity-30' : ''}`} />
+                    <div className={`mob-wave${isMuted ? ' opacity-30' : ''}`} />
+                    <div className={`mob-wave${isMuted ? ' opacity-30' : ''}`} />
+                    <div className={`mob-wave${isMuted ? ' opacity-30' : ''}`} />
                   </div>
-                  <span className="text-[10px] text-[var(--color-text-2)] font-medium">{isMuted ? 'muted' : 'voice'}</span>
+                  <span className="mob-vpill-txt">{isMuted ? 'muted' : 'voice'}</span>
                   {isMuted && (
-                    <button onClick={e => { e.stopPropagation(); toggleMute(); }} className="text-[var(--color-text-4)] hover:text-[var(--color-text-1)]">
-                      <IconMic size={11} />
+                    <button onClick={e => { e.stopPropagation(); toggleMute(); }}
+                      style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#777', padding: 0 }}>
+                      <i className="ti ti-microphone" style={{ fontSize: 11 }} />
                     </button>
                   )}
                 </>
               ) : (
                 <>
-                  <IconMic size={12} className="text-[var(--color-text-3)]" />
-                  <span className="text-[10px] text-[var(--color-text-4)]">voice</span>
+                  <i className="ti ti-microphone" style={{ fontSize: 13, color: '#383838' }} />
+                  <span className="mob-vpill-txt">voice</span>
                 </>
               )}
             </button>
+
+            {/* User avatars */}
+            <div className="mob-avs">
+              {users.slice(0, 2).map((u, i) => (
+                <div key={u+i} className="mob-av"
+                  style={{
+                    background: i === 0 ? '#A8B8C4' : '#2a3a4a',
+                    color: i === 0 ? '#0d1a20' : '#8aa8c0',
+                    marginLeft: i > 0 ? -6 : 0,
+                    zIndex: 2 - i,
+                  }}
+                  title={u}>
+                  {u[0].toUpperCase()}
+                </div>
+              ))}
+              {users.length > 2 && (
+                <div className="mob-av" style={{ background: '#1c1c1c', color: '#777', marginLeft: -6 }}>
+                  +{users.length - 2}
+                </div>
+              )}
+            </div>
           </div>
         </div>
 
-        {/* ── Mobile Tab Content ── */}
+        {/* ── Tab Content ── */}
         <div className="flex-1 overflow-hidden flex flex-col min-h-0">
           <AnimatePresence mode="wait">
 
             {/* PLAYER TAB */}
             {mobileTab === 'player' && (
               <motion.div key="player" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }} className="flex flex-col flex-1 min-h-0">
+                transition={{ duration: 0.12 }} className="flex flex-col flex-1 min-h-0">
 
                 {/* Video */}
-                <div className="bg-black w-full aspect-video shrink-0 relative">
+                <div className="mob-vid">
                   {videoUrl ? (
                     <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
                       onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek} playerRef={playerRef} />
                   ) : (
-                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
-                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
-                        <IconPlay size={24} className="text-[#D4A06A]/50 ml-1" />
-                      </div>
-                      <p className="text-white/40 text-[13px] text-center px-6">
-                        {isHost ? 'Go to URL tab to add a video' : 'Waiting for host...'}
+                    <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
+                      <i className="ti ti-player-play" style={{ fontSize: 40, color: '#383838' }} />
+                      <p style={{ fontSize: 12, color: '#383838', textAlign: 'center', padding: '0 24px' }}>
+                        {isHost ? 'Открой вкладку URL и добавь видео' : 'Ждём хоста...'}
                       </p>
                     </div>
                   )}
                 </div>
 
                 {/* Episode info row */}
-                {videoTitle && (
-                  <div className="ep-info-row">
-                    <div className="flex-1 min-w-0">
-                      <p className="text-[12px] font-medium truncate text-[var(--color-text-0)]">{videoTitle}</p>
+                {(videoTitle || videoUrl) && (
+                  <div className="mob-ep-row">
+                    <div className="mob-ep-l">
+                      <div className="mob-ep-title">{videoTitle || roomName}</div>
+                      <div className="mob-ep-sub">{usersCount} watching</div>
                     </div>
                     {queue.length > 0 && isHost && (
-                      <button onClick={playNext}
-                        className="flex items-center gap-1.5 text-[10px] text-[var(--color-accent)] px-3 py-1.5 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/8 shrink-0">
-                        Next →
+                      <button className="mob-ep-next" onClick={playNext}>
+                        <i className="ti ti-player-track-next" style={{ fontSize: 11 }} />
+                        след.
                       </button>
                     )}
                   </div>
                 )}
 
-                {/* Chat area — scrollable */}
-                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                {/* Chat + input (use existing Chat component) */}
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col" style={{ background: '#080808' }}>
                   <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
                     messagesEndRef={messagesEndRef} currentUserId={userId} />
                 </div>
@@ -429,43 +438,57 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             {/* QUEUE TAB */}
             {mobileTab === 'queue' && (
               <motion.div key="queue" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }} className="flex flex-col flex-1 min-h-0">
-                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                transition={{ duration: 0.12 }} className="flex flex-col flex-1 min-h-0">
+
+                <div className="mob-q-header">
+                  <span className="mob-q-title">очередь</span>
+                  <button className="mob-q-add" onClick={() => setMobileTab('url')}>
+                    <i className="ti ti-plus" style={{ fontSize: 12 }} />
+                    добавить
+                  </button>
+                </div>
+
+                <div style={{ flex: 1, overflowY: 'auto' }}>
                   {queue.length === 0 ? (
-                    <div className="flex flex-col items-center justify-center h-full gap-4 py-16">
-                      <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-3)] border border-[var(--color-border)] flex items-center justify-center">
-                        <IconList size={22} className="text-[var(--color-text-4)]" />
-                      </div>
-                      <div className="text-center">
-                        <p className="text-[13px] text-[var(--color-text-2)] font-medium mb-1">Queue is empty</p>
-                        <p className="text-[11px] text-[var(--color-text-4)]">Add videos from the URL tab</p>
-                      </div>
-                      <button onClick={() => setMobileTab('url')}
-                        className="px-5 py-2.5 rounded-xl bg-[var(--color-bg-3)] border border-[var(--color-border)] text-[var(--color-text-1)] text-[12px] font-medium flex items-center gap-2">
-                        <IconPlus size={12} /> Add Video
-                      </button>
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', padding: '48px 24px', gap: 12 }}>
+                      <i className="ti ti-playlist" style={{ fontSize: 36, color: '#383838' }} />
+                      <p style={{ fontSize: 12, color: '#383838', textAlign: 'center' }}>
+                        Очередь пуста.<br />Добавь видео.
+                      </p>
                     </div>
                   ) : (
                     queue.map((item, i) => (
-                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-bg-2)] border border-[var(--color-border)]">
-                        <div className="w-6 h-6 rounded-md bg-[var(--color-bg-4)] flex items-center justify-center text-[10px] font-bold text-[var(--color-text-3)] shrink-0">{i+1}</div>
-                        <div className="min-w-0 flex-1">
-                          <p className="text-[12px] font-medium truncate text-[var(--color-text-0)]">{item.title || item.originalUrl}</p>
-                          <p className="text-[10px] text-[var(--color-text-4)]">by {item.addedByName}</p>
+                      <div key={item.id} className="mob-qi">
+                        <span className="mob-qn" style={{ color: '#777' }}>{i + 1}</span>
+                        <div className="mob-qthumb">
+                          <i className="ti ti-device-tv" />
+                        </div>
+                        <div style={{ flex: 1, minWidth: 0 }}>
+                          <div className="mob-qi-name">{item.title || item.originalUrl}</div>
+                          <div className="mob-qi-meta">{item.addedByName}</div>
                         </div>
                         {isHost && (
-                          <button onClick={() => removeFromQueue(item.id)} className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--color-text-4)] hover:text-[var(--color-error)]">
-                            <IconX size={10} />
+                          <button onClick={() => removeFromQueue(item.id)}
+                            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#383838', padding: 4 }}>
+                            <i className="ti ti-x" style={{ fontSize: 14 }} />
                           </button>
                         )}
                       </div>
                     ))
                   )}
                 </div>
+
                 {queue.length > 0 && isHost && (
-                  <div className="p-3 border-t border-[var(--color-border)] shrink-0">
-                    <button onClick={playNext} className="w-full py-3 rounded-xl bg-[#D4A06A] text-black text-[13px] font-semibold flex items-center justify-center gap-2">
-                      <IconPlay size={14} /> Play Next
+                  <div style={{ padding: '8px 18px 12px', borderTop: '1px solid #1a1a1a' }}>
+                    <button onClick={playNext} style={{
+                      width: '100%', padding: '11px', borderRadius: 12,
+                      background: '#A8B8C4', color: '#0a151a',
+                      fontSize: 13, fontWeight: 600, border: 'none', cursor: 'pointer',
+                      display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 7,
+                      fontFamily: 'inherit',
+                    }}>
+                      <i className="ti ti-player-play" style={{ fontSize: 14 }} />
+                      Play Next
                     </button>
                   </div>
                 )}
@@ -475,7 +498,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             {/* URL TAB */}
             {mobileTab === 'url' && (
               <motion.div key="url" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
-                transition={{ duration: 0.15 }} className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+                transition={{ duration: 0.12 }} className="flex flex-col flex-1 min-h-0">
                 <MobileUrlTab
                   onVideoResolved={handleMobileVideoResolved}
                   onAddToQueue={handleMobileAddToQueue}
@@ -487,26 +510,32 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           </AnimatePresence>
         </div>
 
-        {/* ── Mobile Bottom Tab Bar ── */}
-        <div className="mob-tab-bar">
-          <button className={`mob-tab ${mobileTab === 'player' ? 'active' : ''}`} onClick={() => setMobileTab('player')}>
+        {/* ── Bottom Tab Bar ── */}
+        <div className="mob-tabs">
+          <button className={`mob-tab-btn${mobileTab === 'player' ? ' on' : ''}`} onClick={() => setMobileTab('player')}>
             {mobileTab === 'player' && <div className="mob-tab-line" />}
-            <IconTv size={20} />
-            <span>Player</span>
+            <i className="ti ti-device-tv" />
+            <span>Плеер</span>
           </button>
-          <button className={`mob-tab ${mobileTab === 'queue' ? 'active' : ''}`} onClick={() => setMobileTab('queue')}>
+          <button className={`mob-tab-btn${mobileTab === 'queue' ? ' on' : ''}`} onClick={() => setMobileTab('queue')}>
             {mobileTab === 'queue' && <div className="mob-tab-line" />}
-            <div className="relative">
-              <IconList size={20} />
+            <div style={{ position: 'relative', display: 'inline-flex' }}>
+              <i className="ti ti-playlist" />
               {queue.length > 0 && (
-                <div className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-[7px] font-bold text-black">{queue.length}</div>
+                <div style={{
+                  position: 'absolute', top: -4, right: -6,
+                  width: 14, height: 14, borderRadius: '50%',
+                  background: '#A8B8C4', color: '#0d1a20',
+                  fontSize: 7, fontWeight: 700,
+                  display: 'flex', alignItems: 'center', justifyContent: 'center',
+                }}>{queue.length}</div>
               )}
             </div>
-            <span>Queue</span>
+            <span>Очередь</span>
           </button>
-          <button className={`mob-tab ${mobileTab === 'url' ? 'active' : ''}`} onClick={() => setMobileTab('url')}>
+          <button className={`mob-tab-btn${mobileTab === 'url' ? ' on' : ''}`} onClick={() => setMobileTab('url')}>
             {mobileTab === 'url' && <div className="mob-tab-line" />}
-            <IconLink size={20} />
+            <i className="ti ti-link" />
             <span>URL</span>
           </button>
         </div>

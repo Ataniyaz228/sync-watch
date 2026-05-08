@@ -3,7 +3,6 @@
 import { useState, useEffect } from 'react';
 import { apiRequest } from '@/lib/utils';
 import type { VideoResolution } from '@/types';
-import { IconLink, IconPlay, IconCheck } from '@/components/ui/Icons';
 
 interface HistoryEntry {
   url: string;
@@ -18,16 +17,17 @@ interface MobileUrlTabProps {
 }
 
 function getUrlIcon(url: string) {
-  if (url.includes('youtube.com') || url.includes('youtu.be')) return '▶';
-  if (url.includes('vk.com')) return 'В';
-  if (url.includes('.m3u8')) return '〜';
-  if (url.includes('.mp4')) return '▣';
-  return '🔗';
+  if (url.includes('youtube.com') || url.includes('youtu.be')) return 'ti ti-brand-youtube';
+  if (url.includes('vk.com')) return 'ti ti-brand-vk';
+  if (url.includes('.m3u8')) return 'ti ti-broadcast';
+  if (url.includes('.mp4')) return 'ti ti-file-type-mp4';
+  return 'ti ti-link';
 }
 
 function timeAgoShort(iso: string) {
   const diff = Date.now() - new Date(iso).getTime();
   const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
   if (m < 60) return `${m}m ago`;
   const h = Math.floor(m / 60);
   if (h < 24) return `${h}h ago`;
@@ -37,9 +37,8 @@ function timeAgoShort(iso: string) {
 const HISTORY_KEY = 'sw_url_history';
 
 function loadHistory(): HistoryEntry[] {
-  try {
-    return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]');
-  } catch { return []; }
+  try { return JSON.parse(localStorage.getItem(HISTORY_KEY) || '[]'); }
+  catch { return []; }
 }
 
 function saveHistory(url: string, type: string) {
@@ -55,9 +54,7 @@ export default function MobileUrlTab({ onVideoResolved, onAddToQueue, isHost }: 
   const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [mode, setMode] = useState<'play' | 'queue'>('play');
 
-  useEffect(() => {
-    setHistory(loadHistory());
-  }, []);
+  useEffect(() => { setHistory(loadHistory()); }, []);
 
   const resolve = async (inputUrl: string) => {
     const u = inputUrl.trim();
@@ -75,11 +72,8 @@ export default function MobileUrlTab({ onVideoResolved, onAddToQueue, isHost }: 
       });
       saveHistory(u, result.type);
       setHistory(loadHistory());
-      if (mode === 'queue') {
-        onAddToQueue(result);
-      } else {
-        onVideoResolved(result);
-      }
+      if (mode === 'queue') { onAddToQueue(result); }
+      else { onVideoResolved(result); }
       setUrl('');
     } catch (err) {
       setError(err instanceof Error ? err.message : 'Failed to resolve');
@@ -89,80 +83,106 @@ export default function MobileUrlTab({ onVideoResolved, onAddToQueue, isHost }: 
   };
 
   const handleSubmit = (e: React.FormEvent) => { e.preventDefault(); resolve(url); };
-  const handleHistoryClick = (h: HistoryEntry) => { setUrl(h.url); resolve(h.url); };
 
   return (
-    <div className="mob-url-wrap">
-      <p className="mob-url-title">Add video</p>
+    <div className="mob-url-sc">
+      <div className="mob-url-sc-ttl">ссылка</div>
 
       {/* Mode toggle */}
-      <div className="flex gap-2 mb-4">
+      <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
         <button
           onClick={() => setMode('play')}
-          className={`flex-1 py-2 rounded-xl text-[12px] font-semibold transition-all border ${mode === 'play' ? 'bg-[var(--color-accent)] text-black border-[var(--color-accent)]' : 'bg-[var(--color-bg-2)] text-[var(--color-text-2)] border-[var(--color-border)]'}`}
+          style={{
+            flex: 1, padding: '6px 0', borderRadius: 20, fontSize: 11, fontWeight: 600,
+            fontFamily: 'inherit', cursor: 'pointer',
+            background: mode === 'play' ? '#A8B8C4' : 'transparent',
+            color: mode === 'play' ? '#0a151a' : '#777',
+            border: mode === 'play' ? '1px solid #A8B8C4' : '1px solid #1a1a1a',
+          }}
         >
-          {isHost ? 'Play now' : 'Suggest'}
+          {isHost ? 'Играть' : 'Предложить'}
         </button>
         <button
           onClick={() => setMode('queue')}
-          className={`flex-1 py-2 rounded-xl text-[12px] font-semibold transition-all border ${mode === 'queue' ? 'bg-[var(--color-accent)] text-black border-[var(--color-accent)]' : 'bg-[var(--color-bg-2)] text-[var(--color-text-2)] border-[var(--color-border)]'}`}
+          style={{
+            flex: 1, padding: '6px 0', borderRadius: 20, fontSize: 11, fontWeight: 600,
+            fontFamily: 'inherit', cursor: 'pointer',
+            background: mode === 'queue' ? '#A8B8C4' : 'transparent',
+            color: mode === 'queue' ? '#0a151a' : '#777',
+            border: mode === 'queue' ? '1px solid #A8B8C4' : '1px solid #1a1a1a',
+          }}
         >
-          Add to queue
+          В очередь
         </button>
       </div>
 
-      {/* URL Input */}
       <form onSubmit={handleSubmit}>
-        <div className="mob-url-input-box">
-          <IconLink size={15} className="text-[var(--color-text-4)] shrink-0" />
+        <div className="mob-url-inp-wrap">
+          <i className="ti ti-link" />
           <input
             type="url"
             inputMode="url"
             value={url}
             onChange={e => { setUrl(e.target.value); setError(''); }}
-            placeholder="YouTube, VK, .m3u8, .mp4..."
+            placeholder="youtube, vk, m3u8, mp4..."
             autoComplete="off"
             id="mob-url-input"
           />
           {url && (
-            <button type="button" onClick={() => setUrl('')}
-              className="text-[var(--color-text-4)] text-[10px] px-2 py-1 rounded-md bg-[var(--color-bg-3)] shrink-0">
-              ✕
+            <button type="button" className="mob-url-paste" onClick={() => setUrl('')}>
+              очистить
+            </button>
+          )}
+          {!url && (
+            <button
+              type="button"
+              className="mob-url-paste"
+              onClick={async () => {
+                try {
+                  const text = await navigator.clipboard.readText();
+                  setUrl(text);
+                } catch {}
+              }}
+            >
+              вставить
             </button>
           )}
         </div>
 
-        {error && <p className="text-[var(--color-error)] text-[11px] mb-3 px-1">{error}</p>}
+        {error && (
+          <p style={{ fontSize: 11, color: '#E5584F', marginBottom: 8, paddingLeft: 2 }}>{error}</p>
+        )}
 
-        <button type="submit" disabled={!url.trim() || isLoading} className="mob-url-go" id="mob-url-go">
+        <button type="submit" disabled={!url.trim() || isLoading} className="mob-url-go-btn" id="mob-url-go">
           {isLoading ? (
-            <div className="w-4 h-4 border-2 border-black/30 border-t-black rounded-full animate-spin" />
+            <div style={{
+              width: 14, height: 14, border: '2px solid rgba(10,21,26,0.25)',
+              borderTop: '2px solid #0a151a', borderRadius: '50%',
+              animation: 'spin 0.6s linear infinite',
+            }} />
           ) : (
-            <><IconPlay size={14} /> {mode === 'queue' ? 'Add to queue' : isHost ? 'Play' : 'Suggest'}</>
+            <><i className="ti ti-player-play" style={{ fontSize: 14 }} />смотреть</>
           )}
         </button>
       </form>
 
-      {/* History */}
       {history.length > 0 && (
         <>
-          <p className="mob-hist-label">Recent</p>
+          <div className="mob-hist-lbl">недавнее</div>
           {history.map((h, i) => (
-            <div key={i} className="mob-hist-item" onClick={() => handleHistoryClick(h)}>
-              <div className="mob-hist-icon">
-                <span className="text-[12px] text-[var(--color-text-3)]">{getUrlIcon(h.url)}</span>
+            <div key={i} className="mob-hi" onClick={() => { setUrl(h.url); resolve(h.url); }}>
+              <i className={`${getUrlIcon(h.url)} mob-hi-icon`} />
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div className="mob-hi-url">{h.url}</div>
+                <div className="mob-hi-when">{timeAgoShort(h.resolvedAt)}</div>
               </div>
-              <div className="flex-1 min-w-0">
-                <div className="mob-hist-url">{h.url}</div>
-                <div className="mob-hist-time">{timeAgoShort(h.resolvedAt)}</div>
-              </div>
-              <svg xmlns="http://www.w3.org/2000/svg" width={14} height={14} viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth={1.5} strokeLinecap="round" strokeLinejoin="round" className="text-[var(--color-text-4)] shrink-0">
-                <polyline points="9 18 15 12 9 6" />
-              </svg>
+              <i className="ti ti-chevron-right mob-hi-arr" />
             </div>
           ))}
         </>
       )}
+
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
     </div>
   );
 }

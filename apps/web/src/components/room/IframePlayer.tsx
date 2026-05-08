@@ -8,6 +8,7 @@ interface IframePlayerProps {
   onPlay?: (time: number) => void;
   onPause?: (time: number) => void;
   onSeeked?: (time: number) => void;
+  onReady?: () => void;
 }
 
 // Detect if this is a VK embed — supports postMessage API
@@ -16,7 +17,7 @@ function isVkEmbed(src: string) {
 }
 
 const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
-  ({ src, onPlay, onPause, onSeeked }, ref) => {
+  ({ src, onPlay, onPause, onSeeked, onReady }, ref) => {
     const iframeRef = useRef<HTMLIFrameElement>(null);
     const currentTimeRef = useRef(0);
     const isPlayingRef = useRef(false);
@@ -73,8 +74,8 @@ const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
           case 'inited':
             isVkReadyRef.current = true;
             vkSend('subscribe', ['timeUpdate', 'play', 'pause', 'ended']);
-            // Flush any pending seek/play commands
             setTimeout(flushPending, 100);
+            onReady?.();
             break;
           case 'timeUpdate':
             if (params?.[0] !== undefined) currentTimeRef.current = params[0];

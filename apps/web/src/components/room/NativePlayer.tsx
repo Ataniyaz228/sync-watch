@@ -8,17 +8,20 @@ interface NativePlayerProps {
   onPlay?: (time: number) => void;
   onPause?: (time: number) => void;
   onSeeked?: (time: number) => void;
+  onReady?: () => void;
 }
 
 const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
-  ({ src, onPlay, onPause, onSeeked }, ref) => {
+  ({ src, onPlay, onPause, onSeeked, onReady }, ref) => {
     const videoRef = useRef<HTMLVideoElement>(null);
     const onPlayRef = useRef(onPlay);
     const onPauseRef = useRef(onPause);
     const onSeekedRef = useRef(onSeeked);
+    const onReadyRef = useRef(onReady);
     onPlayRef.current = onPlay;
     onPauseRef.current = onPause;
     onSeekedRef.current = onSeeked;
+    onReadyRef.current = onReady;
 
     useImperativeHandle(ref, () => ({
       play: () => { videoRef.current?.play().catch(() => {}); },
@@ -34,6 +37,9 @@ const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
       const v = videoRef.current;
       if (!v) return;
 
+      const handleCanPlay = () => onReadyRef.current?.();
+      v.addEventListener('canplay', handleCanPlay, { once: true });
+
       const handlePlay = () => onPlayRef.current?.(v.currentTime);
       const handlePause = () => onPauseRef.current?.(v.currentTime);
       const handleSeeked = () => onSeekedRef.current?.(v.currentTime);
@@ -43,6 +49,7 @@ const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
       v.addEventListener('seeked', handleSeeked);
 
       return () => {
+        v.removeEventListener('canplay', handleCanPlay);
         v.removeEventListener('play', handlePlay);
         v.removeEventListener('pause', handlePause);
         v.removeEventListener('seeked', handleSeeked);

@@ -8,39 +8,45 @@ interface YouTubePlayerProps {
   onPlay?: (time: number) => void;
   onPause?: (time: number) => void;
   onSeeked?: (time: number) => void;
+  onReady?: () => void;
 }
 
 const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
-  ({ videoId, onPlay, onPause, onSeeked }, ref) => {
+  ({ videoId, onPlay, onPause, onSeeked, onReady }, ref) => {
     const ytPlayerRef = useRef<YT.Player | null>(null);
     const containerRef = useRef<HTMLDivElement>(null);
-    const [isReady, setIsReady] = useState(false);
+    const [, setReadyFlag] = useState(false);
     const lastTimeRef = useRef(0);
 
-    // Store callbacks in refs so we don't need them in dependencies
+    // Store callbacks in refs — no dependency churn
     const onPlayRef = useRef(onPlay);
     const onPauseRef = useRef(onPause);
     const onSeekedRef = useRef(onSeeked);
+    const onReadyRef = useRef(onReady);
     onPlayRef.current = onPlay;
     onPauseRef.current = onPause;
     onSeekedRef.current = onSeeked;
+    onReadyRef.current = onReady;
 
     useImperativeHandle(ref, () => ({
-      play: () => ytPlayerRef.current?.playVideo(),
-      pause: () => ytPlayerRef.current?.pauseVideo(),
-      seek: (time: number) => ytPlayerRef.current?.seekTo(time, true),
-      getCurrentTime: () => ytPlayerRef.current?.getCurrentTime() ?? 0,
-      isPlaying: () => ytPlayerRef.current?.getPlayerState() === 1,
+      play: () => { try { ytPlayerRef.current?.playVideo(); } catch {} },
+      pause: () => { try { ytPlayerRef.current?.pauseVideo(); } catch {} },
+      seek: (time: number) => { try { ytPlayerRef.current?.seekTo(time, true); } catch {} },
+      getCurrentTime: () => { try { return ytPlayerRef.current?.getCurrentTime() ?? 0; } catch { return 0; } },
+      // Fix: state 3 (buffering) is also "playing"
+      isPlaying: () => {
+        try {
+          const s = ytPlayerRef.current?.getPlayerState();
+          return s === 1 || s === 3; // PLAYING or BUFFERING
+        } catch { return false; }
+      },
     }));
 
-    // Initialize YouTube player — only depends on videoId
     useEffect(() => {
       let destroyed = false;
 
       const createPlayer = () => {
         if (destroyed || !containerRef.current) return;
-
-        // Clear container
         containerRef.current.innerHTML = '';
         const playerDiv = document.createElement('div');
         containerRef.current.appendChild(playerDiv);
@@ -58,9 +64,13 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
           },
           events: {
             onReady: () => {
-              if (!destroyed) setIsReady(true);
+              if (!destroyed) {
+                setReadyFlag(true);
+                onReadyRef.current?.();
+              }
             },
             onStateChange: (event: YT.OnStateChangeEvent) => {
+              if (destroyed) return;
               const time = ytPlayerRef.current?.getCurrentTime() ?? 0;
               switch (event.data) {
                 case 1: // PLAYING
@@ -70,7 +80,6 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
                   onPauseRef.current?.(time);
                   break;
               }
-              // Detect seek: time jumped > 1s while playing
               const drift = Math.abs(time - lastTimeRef.current);
               if (drift > 1 && event.data === 1) {
                 onSeekedRef.current?.(time);
@@ -81,7 +90,6 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
         });
       };
 
-      // Load YT API if needed
       if (!window.YT || !window.YT.Player) {
         if (!document.querySelector('script[src*="youtube.com/iframe_api"]')) {
           const tag = document.createElement('script');
@@ -89,7 +97,6 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
           tag.async = true;
           document.body.appendChild(tag);
         }
-        // Wait for API
         const prev = window.onYouTubeIframeAPIReady;
         window.onYouTubeIframeAPIReady = () => {
           prev?.();
@@ -101,20 +108,19 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
 
       return () => {
         destroyed = true;
-        setIsReady(false);
-        try { ytPlayerRef.current?.destroy(); } catch { /* ignore */ }
+        setReadyFlag(false);
+        try { ytPlayerRef.current?.destroy(); } catch {}
         ytPlayerRef.current = null;
       };
-    }, [videoId]); // ONLY videoId — no callback dependencies!
+    }, [videoId]);
 
     // Track time for seek detection
     useEffect(() => {
-      if (!isReady) return;
       const interval = setInterval(() => {
-        lastTimeRef.current = ytPlayerRef.current?.getCurrentTime() ?? 0;
+        try { lastTimeRef.current = ytPlayerRef.current?.getCurrentTime() ?? 0; } catch {}
       }, 500);
       return () => clearInterval(interval);
-    }, [isReady]);
+    }, []);
 
     return (
       <div ref={containerRef} style={{ width: '100%', height: '100%', background: '#000' }} />

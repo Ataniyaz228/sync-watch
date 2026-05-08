@@ -15,10 +15,11 @@ interface VideoPlayerProps {
   onPlay: (time: number) => void;
   onPause: (time: number) => void;
   onSeeked: (time: number) => void;
+  onReady?: () => void;
   playerRef: React.MutableRefObject<VideoPlayerAPI | null>;
 }
 
-export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeked, playerRef }: VideoPlayerProps) {
+export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeked, onReady, playerRef }: VideoPlayerProps) {
   const internalRef = useRef<VideoPlayerAPI>(null);
 
   const setRef = useCallback((api: VideoPlayerAPI | null) => {
@@ -42,10 +43,10 @@ export default function VideoPlayer({ type, url, title, onPlay, onPause, onSeeke
         </div>
       )}
       <div style={{ position: 'absolute', inset: 0 }}>
-        {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-        {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-        {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
-        {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} />}
+        {type === 'hls' && <HlsPlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
+        {type === 'youtube' && <YouTubePlayer ref={setRef} videoId={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
+        {type === 'mp4' && <NativePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
+        {type === 'iframe' && <IframePlayer ref={setRef} src={url} onPlay={onPlay} onPause={onPause} onSeeked={onSeeked} onReady={onReady} />}
       </div>
     </div>
   );

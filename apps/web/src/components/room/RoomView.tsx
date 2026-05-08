@@ -88,66 +88,68 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     return u;
   }, [on]);
 
-  // Pending sync: when we receive sync-state, we need to seek+play AFTER the player loads
+  // Pending sync: stores target position/state until player is READY
   const pendingSyncRef = useRef<{ currentTime: number; isPlaying: boolean } | null>(null);
+  const syncRequestedRef = useRef(false);
+
+  // Called when the actual player (YouTube/HLS/native/VK) finishes initializing
+  const onPlayerReady = useCallback(() => {
+    const pending = pendingSyncRef.current;
+    if (!pending) return;
+    const player = playerRef.current;
+    if (!player) return;
+
+    // Player is TRULY ready — apply sync
+    if (pending.currentTime > 1) {
+      player.seek(pending.currentTime);
+    }
+    if (pending.isPlaying) {
+      player.play();
+    }
+    pendingSyncRef.current = null;
+
+    // If we haven't requested sync-state yet (first join), do it now
+    // This handles the case where sync-state arrived before player was ready
+    if (!syncRequestedRef.current) {
+      syncRequestedRef.current = true;
+      emit('video:sync-request', { roomSlug });
+    }
+  }, [emit, roomSlug]);
 
   useEffect(() => {
     const u = on('video:sync-state', (s: RoomState) => {
       if (s.type && s.resolvedUrl) {
         setVideoType(s.type); setVideoUrl(s.resolvedUrl); setVideoTitle(s.title || '');
-        // Store pending sync — player might not be ready yet
+        // Store pending sync — player is likely not ready yet
         pendingSyncRef.current = {
           currentTime: s.currentTime ?? 0,
           isPlaying: s.isPlaying ?? false,
         };
+        // If player is ALREADY ready (e.g. same video URL), apply immediately
+        const player = playerRef.current;
+        if (player) {
+          setTimeout(() => {
+            const p = pendingSyncRef.current;
+            if (!p) return;
+            if (p.currentTime > 1) player.seek(p.currentTime);
+            if (p.isPlaying) player.play();
+            pendingSyncRef.current = null;
+          }, 500);
+        }
       }
     });
 
-    // Race condition fix: re-request state after mount
-    const t1 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 500);
-    const t2 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 2000);
-    const t3 = setTimeout(() => { emit('video:sync-request', { roomSlug }); }, 5000);
+    // Single sync request after mount — if server already sent sync-state before
+    // this handler was registered, we need to re-request
+    const t = setTimeout(() => {
+      if (!syncRequestedRef.current) {
+        syncRequestedRef.current = true;
+        emit('video:sync-request', { roomSlug });
+      }
+    }, 1000);
 
-    return () => { u(); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
+    return () => { u(); clearTimeout(t); };
   }, [on, emit, roomSlug]);
-
-  // Apply pending sync once player is TRULY ready (not just mounted)
-  // Iframes/YouTube/HLS need time to initialize internally before seek() works
-  useEffect(() => {
-    if (!videoUrl) return;
-    let attempts = 0;
-    const maxAttempts = 20; // 20 x 750ms = 15 seconds of retrying
-
-    const interval = setInterval(() => {
-      const pending = pendingSyncRef.current;
-      if (!pending) { clearInterval(interval); return; }
-
-      const player = playerRef.current;
-      if (!player) return; // component not mounted yet
-
-      attempts++;
-
-      // Try seeking
-      if (pending.currentTime > 1) {
-        player.seek(pending.currentTime);
-      }
-      if (pending.isPlaying) {
-        player.play();
-      }
-
-      // Verify: did seek actually work? Check if position is near target
-      const actual = player.getCurrentTime();
-      const seekWorked = pending.currentTime <= 1 || Math.abs(actual - pending.currentTime) < 5;
-
-      if (seekWorked || attempts >= maxAttempts) {
-        pendingSyncRef.current = null;
-        clearInterval(interval);
-      }
-      // Otherwise: keep retrying — player wasn't ready yet
-    }, 750);
-
-    return () => clearInterval(interval);
-  }, [videoUrl]);
 
   // Host: periodically broadcast position so guests stay in sync
   useEffect(() => {
@@ -159,7 +161,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       if (currentTime > 0) {
         emit('video:sync-position', { roomSlug, currentTime, isPlaying: player.isPlaying() });
       }
-    }, 10000); // every 10 seconds
+    }, 10000);
     return () => clearInterval(interval);
   }, [isHost, videoUrl, emit, roomSlug]);
 
@@ -389,7 +391,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 <div className="mob-vid">
                   {videoUrl ? (
                     <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
-                      onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek} playerRef={playerRef} />
+                      onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
+                      onReady={onPlayerReady} playerRef={playerRef} />
                   ) : (
                     <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 12 }}>
                       <i className="ti ti-player-play" style={{ fontSize: 40, color: '#383838' }} />
@@ -613,7 +616,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 <VideoPlayer
                   type={videoType} url={videoUrl} title={videoTitle}
                   onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
-                  playerRef={playerRef}
+                  onReady={onPlayerReady} playerRef={playerRef}
                 />
               ) : (
                 <div style={{ position: 'absolute', inset: 0, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', gap: 14 }}>

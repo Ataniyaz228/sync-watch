@@ -14,6 +14,7 @@ import Chat from './Chat';
 import type { VideoResolution, VideoType, RoomState, QueueItem, RequestAction } from '@/types';
 import { IconLink, IconCheck, IconChat, IconPlay, IconMic, IconX, IconHistory, IconPlus, IconArrowRight, IconMoreVertical, IconList, IconTv } from '@/components/ui/Icons';
 import MobileUrlTab from './MobileUrlTab';
+import FullscreenNotifications from './FullscreenNotifications';
 
 interface RoomViewProps {
   roomSlug: string;
@@ -48,11 +49,35 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [headerVisible, setHeaderVisible] = useState(true);
   const [toastMsg, setToastMsg] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [isFullscreen, setIsFullscreen] = useState(false);
+  const videoWrapRef = useRef<HTMLDivElement | null>(null);
   const headerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playerRef = useRef<VideoPlayerAPI | null>(null);
   const { emit, on } = useSocket(roomSlug, username, userId);
   const getPlayer = useCallback(() => playerRef.current, []);
+
+  // Fullscreen detection
+  useEffect(() => {
+    const onFSChange = () => {
+      setIsFullscreen(!!document.fullscreenElement);
+    };
+    document.addEventListener('fullscreenchange', onFSChange);
+    document.addEventListener('webkitfullscreenchange', onFSChange);
+    return () => {
+      document.removeEventListener('fullscreenchange', onFSChange);
+      document.removeEventListener('webkitfullscreenchange', onFSChange);
+    };
+  }, []);
+
+  const toggleFullscreen = useCallback(() => {
+    if (!videoWrapRef.current) return;
+    if (!document.fullscreenElement) {
+      videoWrapRef.current.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }, []);
 
   const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest, videoRequest, acceptVideoRequest, rejectVideoRequest } = useVideoSync({
     on, emit: emit as (event: string, data: unknown) => void,
@@ -621,6 +646,19 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               <IconHistory size={15} />
             </button>
 
+            {/* Fullscreen button */}
+            <button
+              onClick={toggleFullscreen}
+              className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg hidden sm:flex"
+              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
+            >
+              {isFullscreen ? (
+                <i className="ti ti-minimize" style={{ fontSize: 15 }} />
+              ) : (
+                <i className="ti ti-maximize" style={{ fontSize: 15 }} />
+              )}
+            </button>
+
             {/* Mobile: More menu */}
             <div className="relative sm:hidden">
               <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg">
@@ -653,7 +691,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         <div className={`relative flex items-center justify-center px-0 sm:px-4 lg:px-8 flex-1 ${videoUrl ? 'pt-20 pb-4' : 'pt-0 pb-0'}`}>
           {videoUrl ? (
             /* Video loaded — standard aspect-video container */
-            <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
+            <div ref={videoWrapRef} className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
               <VideoPlayer
                 type={videoType}
                 url={videoUrl}
@@ -663,6 +701,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 onSeeked={onLocalSeek}
                 playerRef={playerRef}
               />
+              {/* Fullscreen chat notifications overlay */}
+              <FullscreenNotifications messages={messages} isFullscreen={isFullscreen} />
             </div>
           ) : (
             /* Empty State — fills entire area, centered */

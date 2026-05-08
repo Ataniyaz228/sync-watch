@@ -1269,3 +1269,225 @@ body {
   background: var(--color-bg-3);
 }
 
+/* ═══ Mobile Bottom Tab Bar ═══ */
+
+.mob-tab-bar {
+  display: flex;
+  background: var(--color-bg-1);
+  border-top: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+.mob-tab {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 0 14px;
+  font-size: 10px;
+  font-weight: 500;
+  color: var(--color-text-4);
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-family: inherit;
+  transition: color 0.2s;
+  position: relative;
+  letter-spacing: 0.01em;
+}
+
+.mob-tab.active {
+  color: var(--color-accent);
+}
+
+.mob-tab-line {
+  position: absolute;
+  top: 0;
+  left: 25%;
+  right: 25%;
+  height: 1.5px;
+  background: var(--color-accent);
+  border-radius: 0 0 2px 2px;
+}
+
+/* ═══ Voice Pill ═══ */
+
+.voice-pill {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 5px 10px;
+  border-radius: 20px;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: border-color 0.2s;
+}
+
+.voice-pill:hover { border-color: var(--color-border-hover); }
+
+.voice-pill.active {
+  border-color: rgba(92, 184, 122, 0.3);
+  background: rgba(92, 184, 122, 0.07);
+}
+
+.voice-waves {
+  display: flex;
+  align-items: center;
+  gap: 2px;
+}
+
+.voice-wave {
+  width: 2px;
+  border-radius: 2px;
+  background: var(--color-success);
+  animation: vwave 1s ease-in-out infinite;
+}
+
+.voice-wave:nth-child(1) { height: 5px; animation-delay: 0s; }
+.voice-wave:nth-child(2) { height: 9px; animation-delay: 0.15s; }
+.voice-wave:nth-child(3) { height: 6px; animation-delay: 0.3s; }
+.voice-wave:nth-child(4) { height: 4px; animation-delay: 0.45s; }
+
+@keyframes vwave {
+  0%, 100% { transform: scaleY(0.4); }
+  50% { transform: scaleY(1); }
+}
+
+.voice-pill-muted .voice-wave {
+  animation: none;
+  background: var(--color-text-4);
+  transform: scaleY(0.4);
+}
+
+/* ═══ Episode Info Row ═══ */
+
+.ep-info-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 16px;
+  border-bottom: 1px solid var(--color-border);
+  flex-shrink: 0;
+}
+
+/* ═══ Mobile URL Tab ═══ */
+
+.mob-url-wrap {
+  padding: 16px;
+  flex: 1;
+  overflow-y: auto;
+}
+
+.mob-url-title {
+  font-size: 14px;
+  font-weight: 500;
+  margin-bottom: 14px;
+  color: var(--color-text-0);
+  letter-spacing: -0.02em;
+}
+
+.mob-url-input-box {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: var(--color-bg-2);
+  border: 1px solid var(--color-border);
+  border-radius: 12px;
+  padding: 12px 14px;
+  margin-bottom: 10px;
+  transition: border-color 0.2s;
+}
+
+.mob-url-input-box:focus-within {
+  border-color: var(--color-border-active);
+}
+
+.mob-url-input-box input {
+  flex: 1;
+  background: none;
+  border: none;
+  outline: none;
+  font-size: 13px;
+  color: var(--color-text-0);
+  font-family: inherit;
+}
+
+.mob-url-input-box input::placeholder {
+  color: var(--color-text-4);
+}
+
+.mob-url-go {
+  width: 100%;
+  padding: 13px;
+  border-radius: 12px;
+  background: var(--color-accent);
+  color: #0a0a0b;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  font-family: inherit;
+  border: none;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 7px;
+  margin-bottom: 20px;
+  transition: opacity 0.2s, transform 0.15s;
+}
+
+.mob-url-go:hover { opacity: 0.9; }
+.mob-url-go:active { transform: scale(0.98); }
+.mob-url-go:disabled { opacity: 0.3; cursor: not-allowed; }
+
+.mob-hist-label {
+  font-size: 10px;
+  color: var(--color-text-4);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin-bottom: 8px;
+}
+
+.mob-hist-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--color-border);
+  cursor: pointer;
+  transition: opacity 0.15s;
+}
+
+.mob-hist-item:hover { opacity: 0.75; }
+
+.mob-hist-icon {
+  width: 32px;
+  height: 32px;
+  border-radius: 8px;
+  background: var(--color-bg-3);
+  border: 1px solid var(--color-border);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+}
+
+.mob-hist-url {
+  font-size: 11px;
+  color: var(--color-text-2);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 195px;
+}
+
+.mob-hist-time {
+  font-size: 10px;
+  color: var(--color-text-4);
+  margin-top: 2px;
+}
+
+

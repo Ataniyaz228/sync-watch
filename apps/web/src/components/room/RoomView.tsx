@@ -12,7 +12,8 @@ import VideoPlayer from './VideoPlayer';
 import UrlInput from './UrlInput';
 import Chat from './Chat';
 import type { VideoResolution, VideoType, RoomState, QueueItem, RequestAction } from '@/types';
-import { IconLink, IconCheck, IconChat, IconUsers, IconPlay, IconMic, IconX, IconVolume, IconHistory, IconPlus, IconArrowRight, IconMoreVertical, IconList } from '@/components/ui/Icons';
+import { IconLink, IconCheck, IconChat, IconPlay, IconMic, IconX, IconHistory, IconPlus, IconArrowRight, IconMoreVertical, IconList, IconTv } from '@/components/ui/Icons';
+import MobileUrlTab from './MobileUrlTab';
 
 interface RoomViewProps {
   roomSlug: string;
@@ -43,6 +44,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [videoSuggestion, setVideoSuggestion] = useState<{ username: string; url: string; title?: string; type: string; resolvedUrl: string; originalUrl: string } | null>(null);
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'queue'>('chat');
+  const [mobileTab, setMobileTab] = useState<'player' | 'queue' | 'url'>('player');
   const [headerVisible, setHeaderVisible] = useState(true);
   const [toastMsg, setToastMsg] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
@@ -198,6 +200,17 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     });
   }, [roomSlug]);
 
+  // Mobile: when URL tab resolves a video, switch to player tab
+  const handleMobileVideoResolved = useCallback((r: VideoResolution) => {
+    handleVideoResolved(r);
+    setMobileTab('player');
+  }, [handleVideoResolved]);
+
+  const handleMobileAddToQueue = useCallback((r: VideoResolution) => {
+    addToQueue(r);
+    setMobileTab('queue');
+  }, [addToQueue]);
+
   return (
     <div className="flex flex-col lg:flex-row h-dvh bg-[var(--color-bg-0)] overflow-hidden">
       
@@ -302,8 +315,208 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         )}
       </AnimatePresence>
 
+      {/* ════════════════════════════════════
+           MOBILE LAYOUT (hidden on lg+)
+      ════════════════════════════════════ */}
+      <div className="flex lg:hidden flex-col flex-1 min-h-0 overflow-hidden">
+
+        {/* ── Mobile Header ── */}
+        <div className="flex items-center justify-between px-4 py-3 bg-[var(--color-bg-1)] border-b border-[var(--color-border)] shrink-0">
+          <div className="flex items-center gap-2.5">
+            <button onClick={() => router.push('/')} className="w-8 h-8 rounded-full bg-[var(--color-bg-3)] flex items-center justify-center text-[var(--color-text-2)]">
+              <IconArrowRight size={14} className="rotate-180" />
+            </button>
+            <div>
+              <h1 className="text-[14px] font-semibold tracking-tight leading-none">{roomName}</h1>
+              <div className="flex items-center gap-1.5 mt-0.5">
+                <div className="w-1.5 h-1.5 rounded-full bg-[var(--color-success)]" />
+                <span className="text-[10px] text-[var(--color-text-4)]">{usersCount} watching</span>
+                {isHost && <span className="text-[9px] px-1.5 py-0.5 rounded-full bg-[#D4A06A]/15 text-[#D4A06A] border border-[#D4A06A]/25 font-bold uppercase tracking-wider">Host</span>}
+              </div>
+            </div>
+          </div>
+
+          <div className="flex items-center gap-2">
+            {/* User avatars */}
+            <div className="flex -space-x-1.5">
+              {users.slice(0, 2).map((u, i) => (
+                <div key={u+i} className="w-7 h-7 rounded-full bg-gradient-to-br from-[#D4A06A] to-[#8c6742] border-2 border-[var(--color-bg-1)] flex items-center justify-center text-[9px] font-bold text-white" title={u}>
+                  {u[0].toUpperCase()}
+                </div>
+              ))}
+              {users.length > 2 && (
+                <div className="w-7 h-7 rounded-full bg-[var(--color-bg-3)] border-2 border-[var(--color-bg-1)] flex items-center justify-center text-[9px] font-bold text-[var(--color-text-3)]">+{users.length - 2}</div>
+              )}
+            </div>
+
+            {/* Voice pill */}
+            <button
+              onClick={isInCall ? leaveCall : joinCall}
+              className={`voice-pill ${isInCall ? 'active' : ''} ${isInCall && isMuted ? 'voice-pill-muted' : ''}`}
+            >
+              {isInCall ? (
+                <>
+                  <div className="voice-waves">
+                    <div className="voice-wave" /><div className="voice-wave" />
+                    <div className="voice-wave" /><div className="voice-wave" />
+                  </div>
+                  <span className="text-[10px] text-[var(--color-text-2)] font-medium">{isMuted ? 'muted' : 'voice'}</span>
+                  {isMuted && (
+                    <button onClick={e => { e.stopPropagation(); toggleMute(); }} className="text-[var(--color-text-4)] hover:text-[var(--color-text-1)]">
+                      <IconMic size={11} />
+                    </button>
+                  )}
+                </>
+              ) : (
+                <>
+                  <IconMic size={12} className="text-[var(--color-text-3)]" />
+                  <span className="text-[10px] text-[var(--color-text-4)]">voice</span>
+                </>
+              )}
+            </button>
+          </div>
+        </div>
+
+        {/* ── Mobile Tab Content ── */}
+        <div className="flex-1 overflow-hidden flex flex-col min-h-0">
+          <AnimatePresence mode="wait">
+
+            {/* PLAYER TAB */}
+            {mobileTab === 'player' && (
+              <motion.div key="player" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }} className="flex flex-col flex-1 min-h-0">
+
+                {/* Video */}
+                <div className="bg-black w-full aspect-video shrink-0 relative">
+                  {videoUrl ? (
+                    <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
+                      onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek} playerRef={playerRef} />
+                  ) : (
+                    <div className="absolute inset-0 flex flex-col items-center justify-center gap-4">
+                      <div className="w-14 h-14 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center">
+                        <IconPlay size={24} className="text-[#D4A06A]/50 ml-1" />
+                      </div>
+                      <p className="text-white/40 text-[13px] text-center px-6">
+                        {isHost ? 'Go to URL tab to add a video' : 'Waiting for host...'}
+                      </p>
+                    </div>
+                  )}
+                </div>
+
+                {/* Episode info row */}
+                {videoTitle && (
+                  <div className="ep-info-row">
+                    <div className="flex-1 min-w-0">
+                      <p className="text-[12px] font-medium truncate text-[var(--color-text-0)]">{videoTitle}</p>
+                    </div>
+                    {queue.length > 0 && isHost && (
+                      <button onClick={playNext}
+                        className="flex items-center gap-1.5 text-[10px] text-[var(--color-accent)] px-3 py-1.5 rounded-full border border-[var(--color-accent)]/25 bg-[var(--color-accent)]/8 shrink-0">
+                        Next →
+                      </button>
+                    )}
+                  </div>
+                )}
+
+                {/* Chat area — scrollable */}
+                <div className="flex-1 min-h-0 overflow-hidden flex flex-col">
+                  <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
+                    messagesEndRef={messagesEndRef} currentUserId={userId} />
+                </div>
+              </motion.div>
+            )}
+
+            {/* QUEUE TAB */}
+            {mobileTab === 'queue' && (
+              <motion.div key="queue" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }} className="flex flex-col flex-1 min-h-0">
+                <div className="flex-1 overflow-y-auto p-3 space-y-2">
+                  {queue.length === 0 ? (
+                    <div className="flex flex-col items-center justify-center h-full gap-4 py-16">
+                      <div className="w-14 h-14 rounded-2xl bg-[var(--color-bg-3)] border border-[var(--color-border)] flex items-center justify-center">
+                        <IconList size={22} className="text-[var(--color-text-4)]" />
+                      </div>
+                      <div className="text-center">
+                        <p className="text-[13px] text-[var(--color-text-2)] font-medium mb-1">Queue is empty</p>
+                        <p className="text-[11px] text-[var(--color-text-4)]">Add videos from the URL tab</p>
+                      </div>
+                      <button onClick={() => setMobileTab('url')}
+                        className="px-5 py-2.5 rounded-xl bg-[var(--color-bg-3)] border border-[var(--color-border)] text-[var(--color-text-1)] text-[12px] font-medium flex items-center gap-2">
+                        <IconPlus size={12} /> Add Video
+                      </button>
+                    </div>
+                  ) : (
+                    queue.map((item, i) => (
+                      <div key={item.id} className="flex items-center gap-3 p-3 rounded-xl bg-[var(--color-bg-2)] border border-[var(--color-border)]">
+                        <div className="w-6 h-6 rounded-md bg-[var(--color-bg-4)] flex items-center justify-center text-[10px] font-bold text-[var(--color-text-3)] shrink-0">{i+1}</div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[12px] font-medium truncate text-[var(--color-text-0)]">{item.title || item.originalUrl}</p>
+                          <p className="text-[10px] text-[var(--color-text-4)]">by {item.addedByName}</p>
+                        </div>
+                        {isHost && (
+                          <button onClick={() => removeFromQueue(item.id)} className="w-6 h-6 rounded-full flex items-center justify-center text-[var(--color-text-4)] hover:text-[var(--color-error)]">
+                            <IconX size={10} />
+                          </button>
+                        )}
+                      </div>
+                    ))
+                  )}
+                </div>
+                {queue.length > 0 && isHost && (
+                  <div className="p-3 border-t border-[var(--color-border)] shrink-0">
+                    <button onClick={playNext} className="w-full py-3 rounded-xl bg-[#D4A06A] text-black text-[13px] font-semibold flex items-center justify-center gap-2">
+                      <IconPlay size={14} /> Play Next
+                    </button>
+                  </div>
+                )}
+              </motion.div>
+            )}
+
+            {/* URL TAB */}
+            {mobileTab === 'url' && (
+              <motion.div key="url" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}
+                transition={{ duration: 0.15 }} className="flex flex-col flex-1 min-h-0 overflow-y-auto">
+                <MobileUrlTab
+                  onVideoResolved={handleMobileVideoResolved}
+                  onAddToQueue={handleMobileAddToQueue}
+                  isHost={isHost}
+                />
+              </motion.div>
+            )}
+
+          </AnimatePresence>
+        </div>
+
+        {/* ── Mobile Bottom Tab Bar ── */}
+        <div className="mob-tab-bar">
+          <button className={`mob-tab ${mobileTab === 'player' ? 'active' : ''}`} onClick={() => setMobileTab('player')}>
+            {mobileTab === 'player' && <div className="mob-tab-line" />}
+            <IconTv size={20} />
+            <span>Player</span>
+          </button>
+          <button className={`mob-tab ${mobileTab === 'queue' ? 'active' : ''}`} onClick={() => setMobileTab('queue')}>
+            {mobileTab === 'queue' && <div className="mob-tab-line" />}
+            <div className="relative">
+              <IconList size={20} />
+              {queue.length > 0 && (
+                <div className="absolute -top-1 -right-1.5 w-3.5 h-3.5 rounded-full bg-[var(--color-accent)] flex items-center justify-center text-[7px] font-bold text-black">{queue.length}</div>
+              )}
+            </div>
+            <span>Queue</span>
+          </button>
+          <button className={`mob-tab ${mobileTab === 'url' ? 'active' : ''}`} onClick={() => setMobileTab('url')}>
+            {mobileTab === 'url' && <div className="mob-tab-line" />}
+            <IconLink size={20} />
+            <span>URL</span>
+          </button>
+        </div>
+      </div>
+
+      {/* ════════════════════════════════════
+           DESKTOP LAYOUT (hidden on mobile)
+      ════════════════════════════════════ */}
       {/* ─── Main Content (Video Area) ─── */}
-      <div className="relative flex-1 flex flex-col min-w-0 min-h-0 bg-[#000]"
+      <div className="relative flex-1 hidden lg:flex flex-col min-w-0 min-h-0 bg-[#000]"
         onMouseMove={showHeader} onTouchStart={showHeader}>
         
         {/* Top Control Bar */}
@@ -446,8 +659,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
       </div>
 
-      {/* ─── Unified Sidebar (Desktop & Mobile) ─── */}
-      <div className={`${chatOpen ? 'flex' : 'hidden'} lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 flex-1 lg:flex-none shadow-[0_-10px_30px_rgba(0,0,0,0.5)] lg:shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
+      {/* ─── Unified Sidebar (Desktop only) ─── */}
+      <div className={`hidden lg:flex flex-col w-full lg:w-[360px] xl:w-[420px] shrink-0 bg-[var(--color-bg-1)] border-t lg:border-t-0 lg:border-l border-[var(--color-border)] z-20 lg:flex-none shadow-[-10px_0_30px_rgba(0,0,0,0.5)] min-h-0`}>
         {/* Mobile drag handle */}
         <div className="sheet-handle lg:hidden" />
 

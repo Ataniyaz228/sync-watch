@@ -22,14 +22,34 @@ const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
     const isPlayingRef = useRef(false);
     const durationRef = useRef(0);
     const [isVk] = useState(() => isVkEmbed(src));
+    const isVkReadyRef = useRef(false);
+    const pendingCmdsRef = useRef<Array<{ method: string; params?: unknown[] }>>([]);
 
     // Send postMessage to VK player
     const vkSend = (method: string, params?: unknown[]) => {
       if (!iframeRef.current?.contentWindow) return;
+      if (!isVkReadyRef.current) {
+        // Buffer command until player is ready
+        pendingCmdsRef.current.push({ method, params });
+        return;
+      }
       iframeRef.current.contentWindow.postMessage(
         JSON.stringify({ method, params }),
         '*'
       );
+    };
+
+    // Flush buffered commands
+    const flushPending = () => {
+      const cmds = pendingCmdsRef.current.splice(0);
+      for (const cmd of cmds) {
+        if (iframeRef.current?.contentWindow) {
+          iframeRef.current.contentWindow.postMessage(
+            JSON.stringify({ method: cmd.method, params: cmd.params }),
+            '*'
+          );
+        }
+      }
     };
 
     // Listen for messages from VK player
@@ -38,7 +58,6 @@ const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
 
       const handler = (e: MessageEvent) => {
         if (!iframeRef.current) return;
-        // Only accept messages from our iframe
         if (e.source !== iframeRef.current.contentWindow) return;
 
         let data: Record<string, unknown>;
@@ -52,8 +71,10 @@ const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
 
         switch (type) {
           case 'inited':
-            // Init complete — subscribe to events
+            isVkReadyRef.current = true;
             vkSend('subscribe', ['timeUpdate', 'play', 'pause', 'ended']);
+            // Flush any pending seek/play commands
+            setTimeout(flushPending, 100);
             break;
           case 'timeUpdate':
             if (params?.[0] !== undefined) currentTimeRef.current = params[0];
@@ -91,7 +112,6 @@ const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
         if (isVk) {
           vkSend('seek', [time]);
           currentTimeRef.current = time;
-          onSeeked?.(time);
         }
       },
       getCurrentTime: () => currentTimeRef.current,

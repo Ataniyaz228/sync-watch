@@ -111,24 +111,41 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     return () => { u(); clearTimeout(t1); clearTimeout(t2); clearTimeout(t3); };
   }, [on, emit, roomSlug]);
 
-  // Apply pending sync once player is ready
+  // Apply pending sync once player is TRULY ready (not just mounted)
+  // Iframes/YouTube/HLS need time to initialize internally before seek() works
   useEffect(() => {
     if (!videoUrl) return;
+    let attempts = 0;
+    const maxAttempts = 20; // 20 x 750ms = 15 seconds of retrying
+
     const interval = setInterval(() => {
       const pending = pendingSyncRef.current;
       if (!pending) { clearInterval(interval); return; }
+
       const player = playerRef.current;
-      if (!player) return; // player not mounted yet, keep retrying
-      // Player is ready — apply sync
+      if (!player) return; // component not mounted yet
+
+      attempts++;
+
+      // Try seeking
       if (pending.currentTime > 1) {
         player.seek(pending.currentTime);
       }
       if (pending.isPlaying) {
         player.play();
       }
-      pendingSyncRef.current = null;
-      clearInterval(interval);
-    }, 300);
+
+      // Verify: did seek actually work? Check if position is near target
+      const actual = player.getCurrentTime();
+      const seekWorked = pending.currentTime <= 1 || Math.abs(actual - pending.currentTime) < 5;
+
+      if (seekWorked || attempts >= maxAttempts) {
+        pendingSyncRef.current = null;
+        clearInterval(interval);
+      }
+      // Otherwise: keep retrying — player wasn't ready yet
+    }, 750);
+
     return () => clearInterval(interval);
   }, [videoUrl]);
 

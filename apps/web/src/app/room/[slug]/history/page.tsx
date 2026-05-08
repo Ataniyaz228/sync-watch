@@ -102,7 +102,7 @@ export default function RoomHistoryPage() {
 
         {/* Header Section */}
         <div className="flex items-center gap-4 mb-8 sm:mb-12">
-          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[#c4885a] shadow-[0_0_24px_rgba(212,160,106,0.3)]">
+          <div className="w-12 h-12 rounded-xl flex items-center justify-center bg-gradient-to-br from-[var(--color-accent)] to-[#7A9BAC] shadow-[0_0_24px_rgba(212,160,106,0.3)]">
             <IconHistory size={24} className="text-[var(--color-bg-0)]" />
           </div>
           <div>

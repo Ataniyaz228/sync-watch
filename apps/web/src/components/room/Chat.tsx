@@ -8,6 +8,25 @@ import { IconSend, IconSmile, IconX } from '@/components/ui/Icons';
 
 const REACTION_EMOJIS = ['❤️', '😂', '😮', '🔥', '👍', '😢'];
 
+/** Plays a soft "pop" notification using Web Audio API — no files needed */
+function playNotifSound() {
+  try {
+    const ctx = new (window.AudioContext || (window as unknown as { webkitAudioContext: typeof AudioContext }).webkitAudioContext)();
+    const osc = ctx.createOscillator();
+    const gain = ctx.createGain();
+    osc.connect(gain);
+    gain.connect(ctx.destination);
+    osc.type = 'sine';
+    osc.frequency.setValueAtTime(880, ctx.currentTime);
+    osc.frequency.exponentialRampToValueAtTime(660, ctx.currentTime + 0.08);
+    gain.gain.setValueAtTime(0.08, ctx.currentTime);
+    gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + 0.22);
+    osc.start(ctx.currentTime);
+    osc.stop(ctx.currentTime + 0.22);
+    osc.onended = () => ctx.close();
+  } catch {}
+}
+
 interface GifResult {
   id: string;
   title: string;
@@ -34,6 +53,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
   const inputRef = useRef<HTMLInputElement>(null);
   const gifSearchRef = useRef<HTMLInputElement>(null);
   const searchTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const prevMsgCountRef = useRef(messages.length);
 
   const fetchGifs = useCallback(async (query: string) => {
     setGifLoading(true);
@@ -70,6 +90,16 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
     }, 400);
     return () => { if (searchTimerRef.current) clearTimeout(searchTimerRef.current); };
   }, [gifSearch, showGifPicker, fetchGifs]);
+
+  // Sound notification on new messages from others
+  useEffect(() => {
+    const prev = prevMsgCountRef.current;
+    prevMsgCountRef.current = messages.length;
+    if (messages.length <= prev) return;
+    const newMsgs = messages.slice(prev);
+    const hasExternal = newMsgs.some(m => !m.isSystem && m.type !== 'system' && m.userId !== currentUserId);
+    if (hasExternal) playNotifSound();
+  }, [messages, currentUserId]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -133,11 +163,11 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
                     onChange={(e) => setGifSearch(e.target.value)}
                     placeholder="Search GIFs..."
                     autoComplete="off"
-                    className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[var(--chat-accent,#D4A06A)]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
+                    className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[var(--chat-accent,#A8B8C4)]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
                   />
                   {gifLoading && (
                     <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                      <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--chat-accent,#D4A06A)', borderTopColor: 'transparent' }} />
+                      <div className="w-4 h-4 border-2 rounded-full animate-spin" style={{ borderColor: 'var(--chat-accent,#A8B8C4)', borderTopColor: 'transparent' }} />
                     </div>
                   )}
                 </div>
@@ -158,7 +188,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
                   <div className="grid grid-cols-2 gap-1.5">
                     {gifResults.map((gif) => (
                       <button key={gif.id} onClick={() => sendGif(gif.url)}
-                        className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[var(--chat-accent,#D4A06A)]/60 transition-all group aspect-square">
+                        className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[var(--chat-accent,#A8B8C4)]/60 transition-all group aspect-square">
                         {/* eslint-disable-next-line @next/next/no-img-element */}
                         <img src={gif.preview || gif.url} alt={gif.title} loading="lazy"
                           className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
@@ -187,7 +217,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
           <button type="button" onClick={() => setShowGifPicker(!showGifPicker)}
             className="chat-gif-btn w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0"
             style={{
-              background: showGifPicker ? 'var(--chat-accent,#D4A06A)' : 'var(--color-bg-3)',
+              background: showGifPicker ? 'var(--chat-accent,#A8B8C4)' : 'var(--color-bg-3)',
               color: showGifPicker ? '#000' : 'var(--color-text-3)',
             }} title="GIFs">
             <span className="text-[10px] font-black uppercase tracking-tight">GIF</span>
@@ -202,7 +232,7 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
           <button type="submit" disabled={!input.trim()}
             className="chat-send-btn w-10 h-10 rounded-xl flex items-center justify-center transition-all shrink-0"
             style={{
-              background: input.trim() ? 'var(--chat-accent,#D4A06A)' : 'var(--color-bg-3)',
+              background: input.trim() ? 'var(--chat-accent,#A8B8C4)' : 'var(--color-bg-3)',
               color: input.trim() ? '#000' : 'var(--color-text-4)',
             }}
             id="chat-send-btn">

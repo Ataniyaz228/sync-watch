@@ -14,7 +14,6 @@ import Chat from './Chat';
 import type { VideoResolution, VideoType, RoomState, QueueItem, RequestAction } from '@/types';
 import { IconLink, IconCheck, IconChat, IconPlay, IconMic, IconX, IconHistory, IconPlus, IconArrowRight, IconMoreVertical, IconList, IconTv } from '@/components/ui/Icons';
 import MobileUrlTab from './MobileUrlTab';
-import FullscreenNotifications from './FullscreenNotifications';
 
 interface RoomViewProps {
   roomSlug: string;
@@ -49,35 +48,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [headerVisible, setHeaderVisible] = useState(true);
   const [toastMsg, setToastMsg] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
-  const [isFullscreen, setIsFullscreen] = useState(false);
-  const videoWrapRef = useRef<HTMLDivElement | null>(null);
   const headerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playerRef = useRef<VideoPlayerAPI | null>(null);
   const { emit, on } = useSocket(roomSlug, username, userId);
   const getPlayer = useCallback(() => playerRef.current, []);
-
-  // Fullscreen detection
-  useEffect(() => {
-    const onFSChange = () => {
-      setIsFullscreen(!!document.fullscreenElement);
-    };
-    document.addEventListener('fullscreenchange', onFSChange);
-    document.addEventListener('webkitfullscreenchange', onFSChange);
-    return () => {
-      document.removeEventListener('fullscreenchange', onFSChange);
-      document.removeEventListener('webkitfullscreenchange', onFSChange);
-    };
-  }, []);
-
-  const toggleFullscreen = useCallback(() => {
-    if (!videoWrapRef.current) return;
-    if (!document.fullscreenElement) {
-      videoWrapRef.current.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  }, []);
 
   const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest, videoRequest, acceptVideoRequest, rejectVideoRequest } = useVideoSync({
     on, emit: emit as (event: string, data: unknown) => void,
@@ -277,7 +252,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               <span className="text-[var(--color-text-0)] font-semibold">{videoSuggestion.username}</span>
               {' '}suggests a video
             </p>
-            <p className="text-[11px] text-[#D4A06A] font-medium text-center truncate mb-3">
+            <p className="text-[11px] text-[#A8B8C4] font-medium text-center truncate mb-3">
               {videoSuggestion.title || videoSuggestion.url}
             </p>
             <div className="flex gap-3">
@@ -595,7 +570,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               
               <div className="flex items-center -space-x-1.5">
                 {users.slice(0, 3).map((u, i) => (
-                  <div key={u+i} className="w-6 h-6 rounded-full bg-gradient-to-br from-[#D4A06A] to-[#8c6742] border border-black flex items-center justify-center text-[9px] font-bold text-white shadow-sm" title={u}>
+                  <div key={u+i} className="w-6 h-6 rounded-full bg-[#A8B8C4] border border-black flex items-center justify-center text-[9px] font-bold text-white shadow-sm" title={u}>
                     {u[0].toUpperCase()}
                   </div>
                 ))}
@@ -609,16 +584,16 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
           </div>
 
           <div className="flex items-center gap-2 pointer-events-auto">
-            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]">
+            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="hidden sm:flex h-9 px-4 items-center gap-2 rounded-full bg-[#A8B8C4] hover:bg-[#7A9BAC] text-black font-semibold text-[12px] transition-all shadow-[0_0_15px_rgba(168,184,196,0.25)]">
               <IconPlus size={14} /> {isHost ? 'Change Video' : 'Suggest Video'}
             </button>
-            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="sm:hidden w-9 h-9 rounded-full bg-[#D4A06A] hover:bg-[#c4885a] flex items-center justify-center text-black transition-all shadow-[0_0_15px_rgba(212,160,106,0.3)]" title={isHost ? 'Change Video' : 'Suggest Video'}>
+            <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }} className="sm:hidden w-9 h-9 rounded-full bg-[#A8B8C4] hover:bg-[#7A9BAC] flex items-center justify-center text-black transition-all shadow-[0_0_15px_rgba(168,184,196,0.25)]" title={isHost ? 'Change Video' : 'Suggest Video'}>
               <IconPlus size={16} />
             </button>
             
             {isInCall ? (
               <div className="flex items-center bg-black/40 backdrop-blur-md border border-white/10 rounded-full p-1 shadow-lg">
-                <button onClick={toggleMute} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isMuted ? 'text-white/60 hover:text-white hover:bg-white/10' : 'bg-[#D4A06A]/20 text-[#D4A06A] shadow-[0_0_10px_rgba(212,160,106,0.2)]'}`} title={isMuted ? 'Unmute' : 'Mute'}>
+                <button onClick={toggleMute} className={`w-8 h-8 rounded-full flex items-center justify-center transition-all ${isMuted ? 'text-white/60 hover:text-white hover:bg-white/10' : 'bg-[#A8B8C4]/15 text-[#A8B8C4] shadow-[0_0_10px_rgba(168,184,196,0.2)]'}`} title={isMuted ? 'Unmute' : 'Mute'}>
                   {isMuted ? <IconX size={14} /> : <IconMic size={14} />}
                 </button>
                 {peerConnected && (
@@ -646,19 +621,6 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               <IconHistory size={15} />
             </button>
 
-            {/* Fullscreen button */}
-            <button
-              onClick={toggleFullscreen}
-              className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg hidden sm:flex"
-              title={isFullscreen ? 'Exit fullscreen' : 'Fullscreen'}
-            >
-              {isFullscreen ? (
-                <i className="ti ti-minimize" style={{ fontSize: 15 }} />
-              ) : (
-                <i className="ti ti-maximize" style={{ fontSize: 15 }} />
-              )}
-            </button>
-
             {/* Mobile: More menu */}
             <div className="relative sm:hidden">
               <button onClick={() => setShowMoreMenu(!showMoreMenu)} className="w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg">
@@ -682,7 +644,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             {/* Mobile Chat Toggle */}
             <button onClick={() => setChatOpen(true)} className="lg:hidden w-9 h-9 rounded-full bg-black/40 backdrop-blur-md border border-white/10 flex items-center justify-center text-white/80 hover:text-white hover:bg-white/10 transition-all shadow-lg relative">
               <IconChat size={15} />
-              {messages.length > 0 && <div className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-[#D4A06A] border-2 border-black" />}
+              {messages.length > 0 && <div className="absolute top-0 right-0 w-2.5 h-2.5 rounded-full bg-[#A8B8C4] border-2 border-black" />}
             </button>
           </div>
         </header>
@@ -691,7 +653,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         <div className={`relative flex items-center justify-center px-0 sm:px-4 lg:px-8 flex-1 ${videoUrl ? 'pt-20 pb-4' : 'pt-0 pb-0'}`}>
           {videoUrl ? (
             /* Video loaded — standard aspect-video container */
-            <div ref={videoWrapRef} className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
+            <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
               <VideoPlayer
                 type={videoType}
                 url={videoUrl}
@@ -701,22 +663,20 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 onSeeked={onLocalSeek}
                 playerRef={playerRef}
               />
-              {/* Fullscreen chat notifications overlay */}
-              <FullscreenNotifications messages={messages} isFullscreen={isFullscreen} />
             </div>
           ) : (
             /* Empty State — fills entire area, centered */
             <div className="flex items-center justify-center w-full h-full">
               <div className="text-center">
-                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 backdrop-blur-sm shadow-[0_0_40px_rgba(212,160,106,0.08)]">
-                  <IconPlay size={36} className="text-[#D4A06A]/60 ml-2 sm:scale-125" />
+                <div className="w-20 h-20 sm:w-24 sm:h-24 rounded-2xl bg-white/5 border border-white/10 flex items-center justify-center mx-auto mb-5 backdrop-blur-sm shadow-[0_0_40px_rgba(168,184,196,0.08)]">
+                  <IconPlay size={36} className="text-[#A8B8C4]/60 ml-2 sm:scale-125" />
                 </div>
                 <p className="text-white/40 text-[14px] sm:text-[16px] font-medium drop-shadow-md mb-5">
                   {isHost ? 'No video yet — start watching!' : 'Waiting for host to start a video...'}
                 </p>
                 {isHost && (
                   <button onClick={() => { setUrlModalMode('change'); setShowUrlModal(true); }}
-                    className="px-6 py-3 rounded-xl bg-[#D4A06A] hover:bg-[#c4885a] text-black font-semibold text-[13px] transition-all shadow-[0_4px_20px_rgba(212,160,106,0.3)] hover:shadow-[0_6px_30px_rgba(212,160,106,0.4)] hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
+                    className="px-6 py-3 rounded-xl bg-[#A8B8C4] hover:bg-[#7A9BAC] text-black font-semibold text-[13px] transition-all shadow-[0_4px_20px_rgba(168,184,196,0.25)] hover:shadow-[0_6px_30px_rgba(168,184,196,0.3)] hover:-translate-y-0.5 flex items-center gap-2 mx-auto">
                     <IconPlus size={15} /> Add Video
                   </button>
                 )}
@@ -746,7 +706,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               {sidebarTab === 'queue' && (
                 <motion.div layoutId="activeTab" className="absolute inset-0 bg-[var(--color-bg-3)] rounded-md shadow-sm" transition={{ type: "spring", bounce: 0.2, duration: 0.6 }} />
               )}
-              <span className="relative z-10 flex items-center gap-1.5"><IconList size={13} /> Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#D4A06A] font-bold">{queue.length}</span>}</span>
+              <span className="relative z-10 flex items-center gap-1.5"><IconList size={13} /> Queue {queue.length > 0 && <span className="text-[9px] ml-0.5 text-[#A8B8C4] font-bold">{queue.length}</span>}</span>
             </button>
           </div>
           <button onClick={() => setChatOpen(false)} className="lg:hidden w-7 h-7 rounded-full surface-raised flex items-center justify-center text-[var(--color-text-3)] hover:text-[var(--color-text-0)] transition-colors shrink-0">

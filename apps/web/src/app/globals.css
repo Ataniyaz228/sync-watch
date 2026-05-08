@@ -2007,19 +2007,22 @@ body {
 /* url-bar */
 .dt-url-bar {
   display: flex; align-items: center; gap: 8px;
-  padding: 8px 16px; border-top: 1px solid var(--dt-br);
+  padding: 8px 12px; border-top: 1px solid var(--dt-br);
   flex-shrink: 0; background: var(--dt-bg);
 }
-.dt-url-inp {
-  flex: 1; background: var(--dt-s1); border: 1px solid var(--dt-br);
+.dt-url-inp-wrap {
+  flex: 1; display: flex; align-items: center; gap: 6px;
+  background: var(--dt-s1); border: 1px solid var(--dt-br);
   border-radius: 6px; padding: 0 10px; height: 32px;
-  font-size: 11px; color: var(--dt-t1); font-family: inherit;
-  display: flex; align-items: center; gap: 6px;
   transition: border-color .15s;
-  outline: none;
+}
+.dt-url-inp-wrap:focus-within { border-color: rgba(168,184,196,.3); }
+.dt-url-inp {
+  flex: 1; background: none; border: none;
+  font-size: 11px; color: var(--dt-t1); font-family: inherit;
+  outline: none; height: 100%;
 }
 .dt-url-inp::placeholder { color: var(--dt-t3); }
-.dt-url-inp:focus { border-color: rgba(168,184,196,.3); }
 .dt-url-go {
   padding: 0 14px; height: 32px; border-radius: 6px;
   background: var(--dt-a); color: #0a151a;
@@ -2032,7 +2035,7 @@ body {
 
 /* ── Right sidebar ── */
 .dt-right {
-  width: 300px; display: flex; flex-direction: column;
+  width: 340px; display: flex; flex-direction: column;
   flex-shrink: 0; background: var(--dt-bg); min-height: 0;
   border-left: 1px solid var(--dt-br);
 }
@@ -2053,16 +2056,20 @@ body {
 
 /* Queue items in dt-right */
 .dt-q-item {
-  display: flex; align-items: center; gap: 10px;
-  padding: 8px 12px; border-bottom: 1px solid var(--dt-br);
-  transition: background .12s; cursor: default;
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; border-bottom: 1px solid var(--dt-br);
+  transition: background .12s;
 }
 .dt-q-item:hover { background: var(--dt-s1); }
 .dt-q-num {
-  width: 20px; height: 20px; border-radius: 4px;
-  background: var(--dt-s3); display: flex; align-items: center;
-  justify-content: center; font-size: 10px; font-weight: 600; color: var(--dt-t3);
-  flex-shrink: 0;
+  font-size: 10px; font-weight: 600; color: var(--dt-t3);
+  width: 14px; text-align: center; flex-shrink: 0;
+}
+.dt-q-thumb {
+  width: 32px; height: 32px; border-radius: 5px;
+  background: var(--dt-s2); display: flex; align-items: center;
+  justify-content: center; flex-shrink: 0;
+  border: 1px solid var(--dt-br);
 }
 .dt-q-info { flex: 1; min-width: 0; }
 .dt-q-title { font-size: 11px; color: var(--dt-t1); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

@@ -45,7 +45,6 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [queue, setQueue] = useState<QueueItem[]>([]);
   const [sidebarTab, setSidebarTab] = useState<'chat' | 'queue'>('chat');
   const [mobileTab, setMobileTab] = useState<'player' | 'queue' | 'url'>('player');
-  const [showBottomBar, setShowBottomBar] = useState(true);
   const [desktopUrl, setDesktopUrl] = useState('');
   const [desktopUrlLoading, setDesktopUrlLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
@@ -539,6 +538,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
           {/* ── Left panel ── */}
           <div className="dt-left">
+
+            {/* Video */}
             <div className="dt-vid">
               {videoUrl ? (
                 <div style={{ position: 'absolute', inset: 0 }}>
@@ -558,6 +559,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               )}
             </div>
 
+            {/* ep-bar — exactly like reference */}
             <div className="dt-ep-bar">
               <div className="dt-ep-thumb"><i className="ti ti-device-tv" /></div>
               <div className="dt-ep-info">
@@ -565,13 +567,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 <div className="dt-ep-sub">{usersCount} смотрят</div>
               </div>
               <div className="dt-ep-btns">
-                <button className={`dt-ep-btn${showBottomBar ? ' acc' : ''}`}
-                  onClick={() => setShowBottomBar(s => !s)}>
-                  <i className="ti ti-chevron-down" style={{ fontSize: 11, transform: showBottomBar ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform .2s' }} />скрыть
+                <button className="dt-ep-btn">
+                  <i className="ti ti-player-track-prev" style={{ fontSize: 11 }} />
                 </button>
-                <button className="dt-ep-btn" onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }}>
-                  <i className="ti ti-playlist" style={{ fontSize: 11 }} />
-                  {queue.length > 0 ? `очередь (${queue.length})` : 'очередь'}
+                <button className="dt-ep-btn" onClick={() => setSidebarTab('queue')}>
+                  <i className="ti ti-playlist" style={{ fontSize: 11 }} />очередь
                 </button>
                 {queue.length > 0 && isHost && (
                   <button className="dt-ep-btn acc" onClick={playNext}>
@@ -581,7 +581,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               </div>
             </div>
 
-            {showBottomBar && <form className="dt-url-bar" onSubmit={async (e) => {
+            {/* url-bar — exactly like reference */}
+            <form className="dt-url-bar" onSubmit={async (e) => {
               e.preventDefault();
               const u = desktopUrl.trim();
               if (!u || desktopUrlLoading) return;
@@ -600,93 +601,100 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 setDesktopUrlLoading(false);
               }
             }}>
-              <i className="ti ti-link" style={{ fontSize: 13, color: 'var(--dt-t3)', flexShrink: 0 }} />
-              <input
-                type="url" value={desktopUrl}
-                onChange={e => setDesktopUrl(e.target.value)}
-                placeholder="youtube, vk, m3u8, mp4 и любые другие ссылки..."
-                autoComplete="off"
-                className="dt-url-inp"
-                style={{ flex: 1 }}
-                id="dt-url-input"
-              />
+              <div className="dt-url-inp-wrap">
+                <i className="ti ti-link" style={{ fontSize: 13, color: 'var(--dt-t3)', flexShrink: 0 }} />
+                <input
+                  type="url" value={desktopUrl}
+                  onChange={e => setDesktopUrl(e.target.value)}
+                  placeholder="youtube, vk, m3u8, mp4 и любые другие ссылки..."
+                  autoComplete="off"
+                  className="dt-url-inp"
+                  id="dt-url-input"
+                />
+              </div>
               <button type="submit" className="dt-url-go" disabled={!desktopUrl.trim() || desktopUrlLoading}>
                 {desktopUrlLoading
                   ? <div style={{ width: 12, height: 12, border: '2px solid rgba(10,21,26,.25)', borderTop: '2px solid #0a151a', borderRadius: '50%', animation: 'spin .6s linear infinite' }} />
                   : <><i className="ti ti-player-play" style={{ fontSize: 11 }} />загрузить</>
                 }
               </button>
-            </form>}
-          </div>
+            </form>
 
+          </div>{/* /dt-left */}
+
+          {/* ── Right sidebar — always visible ── */}
           <div className="dt-right">
-              <div className="dt-sb-tabs">
-                <button className={`dt-sb-tab${sidebarTab === 'chat' ? ' on' : ''}`}
-                  onClick={() => setSidebarTab('chat')}>
-                  чат{messages.length > 0 && <span style={{ marginLeft: 5, fontSize: 9, opacity: .5 }}>{messages.length}</span>}
-                </button>
-                <button className={`dt-sb-tab${sidebarTab === 'queue' ? ' on' : ''}`}
-                  onClick={() => setSidebarTab('queue')}>
-                  очередь{queue.length > 0 && <span style={{ marginLeft: 5, color: 'var(--dt-a)', fontWeight: 700, fontSize: 9 }}>{queue.length}</span>}
-                </button>
-              </div>
-              <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-                {sidebarTab === 'chat' ? (
-                  <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
-                    messagesEndRef={messagesEndRef} currentUserId={userId}
-                    pauseRequest={isHost ? pauseRequest : null}
-                    onAcceptPause={acceptPauseRequest}
-                    onRejectPause={rejectPauseRequest}
-                    videoRequest={isHost ? videoRequest : null}
-                    onAcceptVideoRequest={acceptVideoRequest}
-                    onRejectVideoRequest={rejectVideoRequest}
-                    videoSuggestion={isHost ? videoSuggestion : null}
-                    onAcceptSuggestion={acceptVideoSuggestion}
-                    onRejectSuggestion={rejectVideoSuggestion}
-                  />
-                ) : (
-                  <div style={{ display: 'flex', flexDirection: 'column', height: '100%' }}>
-                    <div style={{ flex: 1, overflowY: 'auto' }}>
-                      {queue.length === 0 ? (
-                        <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, padding: 24 }}>
-                          <i className="ti ti-playlist" style={{ fontSize: 28, color: 'var(--dt-t3)' }} />
-                          <p style={{ fontSize: 11, color: 'var(--dt-t2)' }}>Очередь пуста</p>
-                          <button className="dt-ep-btn" onClick={() => { setUrlModalMode('queue'); setShowUrlModal(true); }}>
-                            <i className="ti ti-plus" style={{ fontSize: 11 }} />добавить
-                          </button>
-                        </div>
-                      ) : (
-                        queue.map((item, i) => (
-                          <div key={item.id} className="dt-q-item">
-                            <div className="dt-q-num">{i + 1}</div>
-                            <div className="dt-q-info">
-                              <div className="dt-q-title">{item.title || item.originalUrl}</div>
-                              <div className="dt-q-by">от {item.addedByName}</div>
-                            </div>
-                            {isHost && (
-                              <button onClick={() => removeFromQueue(item.id)}
-                                style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dt-t3)', fontSize: 12, padding: 4 }}>
-                                <i className="ti ti-x" />
-                              </button>
-                            )}
-                          </div>
-                        ))
-                      )}
-                    </div>
-                    {queue.length > 0 && isHost && (
-                      <div style={{ padding: '8px 12px', borderTop: '1px solid var(--dt-br)', flexShrink: 0 }}>
-                        <button className="dt-ep-btn acc" style={{ width: '100%', justifyContent: 'center', padding: '7px 0' }} onClick={playNext}>
-                          <i className="ti ti-player-track-next" style={{ fontSize: 11 }} />Play Next
-                        </button>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+            <div className="dt-sb-tabs">
+              <button className={`dt-sb-tab${sidebarTab === 'chat' ? ' on' : ''}`}
+                onClick={() => setSidebarTab('chat')}>
+                чат{messages.length > 0 && <span style={{ marginLeft: 5, fontSize: 9, opacity: .5 }}>{messages.length}</span>}
+              </button>
+              <button className={`dt-sb-tab${sidebarTab === 'queue' ? ' on' : ''}`}
+                onClick={() => setSidebarTab('queue')}>
+                очередь{queue.length > 0 && <span style={{ marginLeft: 5, color: 'var(--dt-a)', fontWeight: 700, fontSize: 9 }}>{queue.length}</span>}
+              </button>
             </div>
 
-        </div>
-      </div>
+            <div style={{ flex: 1, overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: 0 }}>
+              {sidebarTab === 'chat' ? (
+                <Chat messages={messages} onSendMessage={sendMessage} onReact={reactToMessage}
+                  messagesEndRef={messagesEndRef} currentUserId={userId}
+                  pauseRequest={isHost ? pauseRequest : null}
+                  onAcceptPause={acceptPauseRequest}
+                  onRejectPause={rejectPauseRequest}
+                  videoRequest={isHost ? videoRequest : null}
+                  onAcceptVideoRequest={acceptVideoRequest}
+                  onRejectVideoRequest={rejectVideoRequest}
+                  videoSuggestion={isHost ? videoSuggestion : null}
+                  onAcceptSuggestion={acceptVideoSuggestion}
+                  onRejectSuggestion={rejectVideoSuggestion}
+                />
+              ) : (
+                /* ── Queue tab ── */
+                <div style={{ display: 'flex', flexDirection: 'column', height: '100%', minHeight: 0 }}>
+                  <div style={{ flex: 1, overflowY: 'auto', padding: '8px 0' }}>
+                    {queue.length === 0 ? (
+                      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', height: '100%', gap: 10, padding: '32px 16px' }}>
+                        <i className="ti ti-playlist" style={{ fontSize: 32, color: 'var(--dt-t3)' }} />
+                        <p style={{ fontSize: 11, color: 'var(--dt-t2)', textAlign: 'center' }}>Очередь пуста.<br/>Добавь ссылку снизу.</p>
+                      </div>
+                    ) : (
+                      queue.map((item, i) => (
+                        <div key={item.id} className="dt-q-item">
+                          <div className="dt-q-num">{i + 1}</div>
+                          <div className="dt-q-thumb">
+                            <i className="ti ti-device-tv" style={{ fontSize: 12, color: 'var(--dt-t3)' }} />
+                          </div>
+                          <div className="dt-q-info">
+                            <div className="dt-q-title">{item.title || item.originalUrl}</div>
+                            <div className="dt-q-by">{item.addedByName}</div>
+                          </div>
+                          {isHost && (
+                            <button onClick={() => removeFromQueue(item.id)}
+                              style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--dt-t3)', fontSize: 12, padding: '4px 8px', flexShrink: 0 }}>
+                              <i className="ti ti-x" />
+                            </button>
+                          )}
+                        </div>
+                      ))
+                    )}
+                  </div>
+                  {queue.length > 0 && isHost && (
+                    <div style={{ padding: '8px 12px', borderTop: '1px solid var(--dt-br)', flexShrink: 0 }}>
+                      <button onClick={playNext}
+                        style={{ width: '100%', padding: '8px', borderRadius: 8, background: 'var(--dt-a)', color: '#0a151a', fontSize: 12, fontWeight: 600, border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 6, fontFamily: 'inherit' }}>
+                        <i className="ti ti-player-track-next" style={{ fontSize: 13 }} />Play Next
+                      </button>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
+          </div>
+
+        </div>{/* /dt-main */}
+      </div>{/* /desktop wrapper */}
+
 
       {/* Toast Notification */}
       <AnimatePresence>

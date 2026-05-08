@@ -59,6 +59,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const [desktopUrlLoading, setDesktopUrlLoading] = useState(false);
   const [toastMsg, setToastMsg] = useState('');
   const [showMoreMenu, setShowMoreMenu] = useState(false);
+  const [showBottomBar, setShowBottomBar] = useState(true);
   const headerTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const playerRef = useRef<VideoPlayerAPI | null>(null);
@@ -592,6 +593,11 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 <i className="ti ti-phone-off" style={{ fontSize: 13 }} />
               </button>
             )}
+            <button className="dt-icon-btn" onClick={() => setShowBottomBar(p => !p)}
+              title={showBottomBar ? 'Скрыть панель' : 'Показать панель'}
+              style={{ color: showBottomBar ? undefined : 'var(--dt-a)' }}>
+              <i className={`ti ${showBottomBar ? 'ti-layout-bottombar-collapse' : 'ti-layout-bottombar-expand'}`} style={{ fontSize: 14 }} />
+            </button>
             <button className="dt-icon-btn" onClick={copyLink} title="Скопировать ссылку">
               {copied
                 ? <i className="ti ti-check" style={{ fontSize: 14, color: 'var(--dt-a)' }} />
@@ -638,7 +644,8 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               )}
             </div>
 
-            {/* ep-bar — exactly like reference */}
+            {/* ep-bar + url-bar — toggleable */}
+            {showBottomBar && (<>
             <div className="dt-ep-bar">
               <div className="dt-ep-thumb"><i className="ti ti-device-tv" /></div>
               <div className="dt-ep-info">
@@ -660,7 +667,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
               </div>
             </div>
 
-            {/* url-bar — exactly like reference */}
+            {/* url-bar */}
             <form className="dt-url-bar" onSubmit={async (e) => {
               e.preventDefault();
               const u = desktopUrl.trim();
@@ -698,6 +705,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 }
               </button>
             </form>
+            </>)}
 
           </div>{/* /dt-left */}
 

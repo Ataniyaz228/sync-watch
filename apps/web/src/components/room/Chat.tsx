@@ -144,10 +144,10 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
             <motion.div key={msg.id} initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.15 }} className="py-0.5">
               {msg.isSystem || msg.type === 'system' ? (
-                <div className="flex items-center gap-3 py-1 my-0.5 opacity-60">
-                  <div className="h-px bg-gradient-to-r from-transparent to-[var(--color-text-4)]/30 flex-1" />
-                  <span className="text-[9px] italic font-medium tracking-wide text-[var(--color-text-3)]">{msg.content}</span>
-                  <div className="h-px bg-gradient-to-l from-transparent to-[var(--color-text-4)]/30 flex-1" />
+                <div className="flex items-center gap-3 py-1.5 my-1 opacity-70">
+                  <div className="h-px bg-gradient-to-r from-transparent to-[var(--color-text-4)]/40 flex-1" />
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[var(--color-text-3)]">{msg.content}</span>
+                  <div className="h-px bg-gradient-to-l from-transparent to-[var(--color-text-4)]/40 flex-1" />
                 </div>
               ) : (
                 <Bubble msg={msg} isOwn={msg.userId === currentUserId} onReact={onReact}
@@ -326,31 +326,35 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
   const isGif = isGifUrl(msg.content);
 
   return (
-    <div className={`flex gap-2 ${isOwn ? 'flex-row-reverse' : ''} group`}>
-      <div className="w-6 h-6 rounded-md flex-shrink-0 flex items-center justify-center text-[10px] font-bold text-[var(--color-bg-0)] mt-0.5"
+    <div className={`flex gap-2.5 ${isOwn ? 'flex-row-reverse' : ''} group mb-1`}>
+      <div className="w-7 h-7 rounded-[10px] shadow-sm flex-shrink-0 flex items-center justify-center text-[11px] font-black text-[var(--color-bg-0)] mt-0.5"
         style={{ backgroundColor: color }}>
         {msg.username[0].toUpperCase()}
       </div>
-      <div className={`max-w-[80%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
-        <div className={`flex items-baseline gap-1.5 mb-0.5 ${isOwn ? 'flex-row-reverse' : ''}`}>
-          <span className="text-[10px] font-medium" style={{ color }}>{msg.username}</span>
-          <span className="text-[9px] text-[var(--color-text-4)] font-mono">{timeAgo(msg.createdAt)}</span>
+      <div className={`max-w-[85%] flex flex-col ${isOwn ? 'items-end' : 'items-start'}`}>
+        <div className={`flex items-baseline gap-2 mb-1 ${isOwn ? 'flex-row-reverse' : ''}`}>
+          <span className="text-[11px] font-bold tracking-tight" style={{ color }}>{msg.username}</span>
+          <span className="text-[9px] text-[var(--color-text-4)] font-medium tracking-wide">{timeAgo(msg.createdAt)}</span>
         </div>
-        <div className={`chat-bubble cursor-pointer transition-colors overflow-hidden ${
-          isGif ? 'bg-transparent rounded-xl' : (isOwn
-            ? 'chat-bubble-own rounded-2xl rounded-br-md'
-            : 'rounded-2xl rounded-bl-md')
+        <div className={`chat-bubble cursor-pointer transition-all overflow-hidden shadow-sm ${
+          isGif ? 'bg-transparent rounded-[14px]' : (isOwn
+            ? 'chat-bubble-own rounded-[16px] rounded-tr-[4px]'
+            : 'rounded-[16px] rounded-tl-[4px]')
         }`}
           style={isOwn && !isGif ? {
-            background: 'var(--chat-own-bg, rgba(212,160,106,0.10))',
-            border: '1px solid var(--chat-own-border, rgba(212,160,106,0.15))',
-          } : (!isGif ? { background: 'var(--color-bg-2)' } : undefined)}
+            background: 'var(--chat-own-bg, rgba(168,184,196,0.12))',
+            border: '1px solid var(--chat-own-border, rgba(168,184,196,0.25))',
+            color: 'var(--color-text-0)'
+          } : (!isGif ? { 
+            background: 'var(--color-bg-2)',
+            border: '1px solid rgba(255,255,255,0.04)'
+          } : undefined)}
           onClick={togglePicker}>
           {isGif ? (
             /* eslint-disable-next-line @next/next/no-img-element */
-            <img src={msg.content} alt="GIF" className="max-w-[220px] w-full rounded-xl border border-white/5" />
+            <img src={msg.content} alt="GIF" className="max-w-[240px] w-full rounded-[14px] border border-white/10 shadow-md" />
           ) : (
-            <div className="px-3 py-1.5 text-sm leading-relaxed text-[var(--color-text-1)] break-words">{msg.content}</div>
+            <div className="px-3.5 py-2 text-[13.5px] leading-relaxed text-[var(--color-text-1)] break-words">{msg.content}</div>
           )}
         </div>
 

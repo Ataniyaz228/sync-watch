@@ -645,7 +645,15 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             </div>
 
             {/* ep-bar + url-bar — toggleable */}
-            {showBottomBar && (<>
+            <AnimatePresence initial={false}>
+              {showBottomBar && (
+                <motion.div
+                  initial={{ height: 0, opacity: 0, scale: 0.98 }}
+                  animate={{ height: 'auto', opacity: 1, scale: 1 }}
+                  exit={{ height: 0, opacity: 0, scale: 0.98 }}
+                  transition={{ duration: 0.25, ease: [0.23, 1, 0.32, 1] }}
+                  className="flex flex-col flex-shrink-0 origin-bottom"
+                >
             <div className="dt-ep-bar">
               <div className="dt-ep-thumb"><i className="ti ti-device-tv" /></div>
               <div className="dt-ep-info">
@@ -705,7 +713,9 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
                 }
               </button>
             </form>
-            </>)}
+                </motion.div>
+              )}
+            </AnimatePresence>
 
           </div>{/* /dt-left */}
 

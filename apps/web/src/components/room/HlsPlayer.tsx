@@ -20,6 +20,7 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
     const onPauseRef = useRef(onPause);
     const onSeekedRef = useRef(onSeeked);
     const onReadyRef = useRef(onReady);
+    const readyFiredRef = useRef(false);
     onPlayRef.current = onPlay;
     onPauseRef.current = onPause;
     onSeekedRef.current = onSeeked;
@@ -35,13 +36,22 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
       isPlaying: () => !!videoRef.current && !videoRef.current.paused,
     }));
 
+    // HLS source loading — runs on every src change
     useEffect(() => {
       const video = videoRef.current;
       if (!video || !src) return;
 
-      video.addEventListener('loadedmetadata', () => {
+      readyFiredRef.current = false;
+
+      const fireReady = () => {
+        if (readyFiredRef.current) return;
+        readyFiredRef.current = true;
         onReadyRef.current?.();
-      }, { once: true });
+      };
+
+      // Fallback: if nothing else fires, use loadedmetadata
+      const handleMeta = () => fireReady();
+      video.addEventListener('loadedmetadata', handleMeta, { once: true });
 
       if (Hls.isSupported()) {
         const hls = new Hls({
@@ -52,6 +62,9 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
         hls.loadSource(src);
         hls.attachMedia(video);
         hlsRef.current = hls;
+
+        // Primary ready signal for HLS
+        hls.on(Hls.Events.MANIFEST_PARSED, () => fireReady());
 
         hls.on(Hls.Events.ERROR, (_event, data) => {
           if (data.fatal) {
@@ -64,14 +77,20 @@ const HlsPlayer = forwardRef<VideoPlayerAPI, HlsPlayerProps>(
         });
 
         return () => {
+          video.removeEventListener('loadedmetadata', handleMeta);
           hls.destroy();
           hlsRef.current = null;
         };
       } else if (video.canPlayType('application/vnd.apple.mpegurl')) {
+        // iOS Safari — native HLS
         video.src = src;
+        return () => {
+          video.removeEventListener('loadedmetadata', handleMeta);
+        };
       }
-    }, [src]);
+    }, [src]); // ← runs on every src change
 
+    // Event listeners — stable, one-time setup
     useEffect(() => {
       const v = videoRef.current;
       if (!v) return;

@@ -33,21 +33,25 @@ const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
       isPlaying: () => !!videoRef.current && !videoRef.current.paused,
     }));
 
+    // Fire onReady on EVERY src change
+    useEffect(() => {
+      const v = videoRef.current;
+      if (!v || !src) return;
+      const handleReady = () => onReadyRef.current?.();
+      v.addEventListener('loadedmetadata', handleReady, { once: true });
+      return () => { v.removeEventListener('loadedmetadata', handleReady); };
+    }, [src]); // ← re-run on src change
+
+    // Event listeners — stable, one-time setup
     useEffect(() => {
       const v = videoRef.current;
       if (!v) return;
-
-      v.addEventListener('loadedmetadata', () => {
-        onReadyRef.current?.();
-      }, { once: true });
-
       const handlePlay = () => onPlayRef.current?.(v.currentTime);
       const handlePause = () => onPauseRef.current?.(v.currentTime);
       const handleSeeked = () => onSeekedRef.current?.(v.currentTime);
       v.addEventListener('play', handlePlay);
       v.addEventListener('pause', handlePause);
       v.addEventListener('seeked', handleSeeked);
-
       return () => {
         v.removeEventListener('play', handlePlay);
         v.removeEventListener('pause', handlePause);

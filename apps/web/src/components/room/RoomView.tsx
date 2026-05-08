@@ -32,6 +32,16 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const router = useRouter();
   const initialLoadedRef = useRef(false);
 
+  // Detect desktop vs mobile — prevents rendering TWO VideoPlayers simultaneously
+  const [isDesktop, setIsDesktop] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia('(min-width: 1024px)');
+    setIsDesktop(mq.matches);
+    const handler = (e: MediaQueryListEvent) => setIsDesktop(e.matches);
+    mq.addEventListener('change', handler);
+    return () => mq.removeEventListener('change', handler);
+  }, []);
+
   const [videoType, setVideoType] = useState<VideoType | null>(null);
   const [videoUrl, setVideoUrl] = useState('');
   const [videoTitle, setVideoTitle] = useState('');
@@ -387,7 +397,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
             {/* Video */}
             <div className="mob-vid">
-              {videoUrl ? (
+              {videoUrl && !isDesktop ? (
                 <VideoPlayer type={videoType} url={videoUrl} title={videoTitle}
                   onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}
                   onReady={onPlayerReady} playerRef={playerRef} />
@@ -612,7 +622,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
 
             {/* Video */}
             <div className="dt-vid">
-              {videoUrl ? (
+              {videoUrl && isDesktop ? (
                 <VideoPlayer
                   type={videoType} url={videoUrl} title={videoTitle}
                   onPlay={onLocalPlay} onPause={onLocalPause} onSeeked={onLocalSeek}

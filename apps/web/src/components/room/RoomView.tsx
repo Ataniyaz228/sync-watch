@@ -282,7 +282,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       </AnimatePresence>
 
       {/* ─── Main Content (Video Area) ─── */}
-      <div className="relative flex-1 flex flex-col min-w-0 min-h-0 bg-[#000]">
+      <div className={`relative flex flex-col min-w-0 min-h-0 bg-[#000] transition-all ${chatOpen ? 'shrink-0' : 'flex-1'} lg:flex-1`}>
         
         {/* Top Control Bar */}
         <header className="absolute top-0 left-0 w-full z-40 bg-gradient-to-b from-black/80 to-transparent pt-4 pb-12 px-4 sm:px-6 flex items-start justify-between pointer-events-none">
@@ -365,7 +365,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
         </header>
 
         {/* Video Player Container */}
-        <div className="flex-1 relative flex items-center justify-center pt-20 pb-4 px-0 sm:px-4 lg:px-8">
+        <div className={`relative flex items-center justify-center pt-20 pb-4 px-0 sm:px-4 lg:px-8 ${chatOpen ? 'w-full' : 'flex-1'} lg:flex-1`}>
           <div className="w-full max-w-6xl aspect-video relative rounded-none sm:rounded-2xl overflow-hidden shadow-2xl bg-[#0A0A0B]">
             <VideoPlayer
               type={videoType}

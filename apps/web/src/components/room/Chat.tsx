@@ -118,57 +118,58 @@ export default function Chat({ messages, onSendMessage, onReact, messagesEndRef,
       {/* GIF Picker */}
       <AnimatePresence>
         {showGifPicker && (
-          <motion.div initial={{ opacity: 0, y: 10 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: 10 }}
-            transition={{ duration: 0.15 }}
-            className="absolute bottom-[76px] left-0 right-0 bg-[var(--color-bg-1)] border-t border-[var(--color-border)] z-30 flex flex-col shadow-[0_-10px_30px_rgba(0,0,0,0.4)]"
-            style={{ height: 'min(320px, 50vh)' }}>
+          <motion.div initial={{ height: 0, opacity: 0 }} animate={{ height: 'auto', opacity: 1 }} exit={{ height: 0, opacity: 0 }}
+            transition={{ duration: 0.2 }}
+            className="bg-[var(--color-bg-1)] border-t border-[var(--color-border)] z-30 flex flex-col shrink-0 overflow-hidden shadow-[0_-10px_30px_rgba(0,0,0,0.1)] relative">
             
-            {/* Search Header */}
-            <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--color-border)]">
-              <div className="flex-1 relative">
-                <input
-                  ref={gifSearchRef}
-                  type="text"
-                  value={gifSearch}
-                  onChange={(e) => setGifSearch(e.target.value)}
-                  placeholder="Search GIFs..."
-                  autoComplete="off"
-                  className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
-                />
-                {gifLoading && (
-                  <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
-                    <div className="w-4 h-4 border-2 border-[#D4A06A]/30 border-t-[#D4A06A] rounded-full animate-spin" />
-                  </div>
-                )}
+            <div className="flex flex-col h-[320px] max-h-[40vh]">
+              {/* Search Header */}
+              <div className="flex items-center gap-2 px-3 py-2.5 border-b border-[var(--color-border)]">
+                <div className="flex-1 relative">
+                  <input
+                    ref={gifSearchRef}
+                    type="text"
+                    value={gifSearch}
+                    onChange={(e) => setGifSearch(e.target.value)}
+                    placeholder="Search GIFs..."
+                    autoComplete="off"
+                    className="w-full bg-[var(--color-bg-0)] border border-[var(--color-border)] focus:border-[#D4A06A]/50 rounded-xl py-3 pl-4 pr-9 text-[14px] text-[var(--color-text-0)] placeholder:text-[var(--color-text-4)] transition-all outline-none"
+                  />
+                  {gifLoading && (
+                    <div className="absolute right-2.5 top-1/2 -translate-y-1/2">
+                      <div className="w-4 h-4 border-2 border-[#D4A06A]/30 border-t-[#D4A06A] rounded-full animate-spin" />
+                    </div>
+                  )}
+                </div>
+                <button onClick={() => setShowGifPicker(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-text-4)] hover:text-[var(--color-text-0)] hover:bg-[var(--color-bg-3)] transition-all shrink-0">
+                  <IconX size={16} />
+                </button>
               </div>
-              <button onClick={() => setShowGifPicker(false)} className="w-8 h-8 rounded-lg flex items-center justify-center text-[var(--color-text-4)] hover:text-[var(--color-text-0)] hover:bg-[var(--color-bg-3)] transition-all shrink-0">
-                <IconX size={16} />
-              </button>
-            </div>
 
-            {/* GIF Grid */}
-            <div className="flex-1 overflow-y-auto p-2 min-h-0">
-              {gifResults.length > 0 ? (
-                <div className="grid grid-cols-2 gap-1.5">
-                  {gifResults.map((gif) => (
-                    <button key={gif.id} onClick={() => sendGif(gif.url)}
-                      className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[#D4A06A]/60 transition-all group aspect-square">
-                      {/* eslint-disable-next-line @next/next/no-img-element */}
-                      <img src={gif.preview || gif.url} alt={gif.title} loading="lazy"
-                        className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
-                    </button>
-                  ))}
-                </div>
-              ) : !gifLoading ? (
-                <div className="flex items-center justify-center h-full text-[var(--color-text-4)] text-xs">
-                  {gifSearch ? 'No GIFs found' : 'Loading...'}
-                </div>
-              ) : null}
-            </div>
+              {/* GIF Grid */}
+              <div className="flex-1 overflow-y-auto p-2 min-h-0">
+                {gifResults.length > 0 ? (
+                  <div className="grid grid-cols-2 gap-1.5">
+                    {gifResults.map((gif) => (
+                      <button key={gif.id} onClick={() => sendGif(gif.url)}
+                        className="rounded-lg overflow-hidden bg-[var(--color-bg-3)] border border-transparent hover:border-[#D4A06A]/60 transition-all group aspect-square">
+                        {/* eslint-disable-next-line @next/next/no-img-element */}
+                        <img src={gif.preview || gif.url} alt={gif.title} loading="lazy"
+                          className="w-full h-full object-cover opacity-80 group-hover:opacity-100 transition-opacity" />
+                      </button>
+                    ))}
+                  </div>
+                ) : !gifLoading ? (
+                  <div className="flex items-center justify-center h-full text-[var(--color-text-4)] text-xs">
+                    {gifSearch ? 'No GIFs found' : 'Loading...'}
+                  </div>
+                ) : null}
+              </div>
 
-            {/* Tenor Attribution */}
-            <div className="px-3 py-1.5 text-center border-t border-[var(--color-border)]">
-              <span className="text-[9px] text-[var(--color-text-4)] uppercase tracking-wider font-medium">Powered by GIPHY</span>
+              {/* Tenor Attribution */}
+              <div className="px-3 py-1.5 text-center border-t border-[var(--color-border)]">
+                <span className="text-[9px] text-[var(--color-text-4)] uppercase tracking-wider font-medium">Powered by GIPHY</span>
+              </div>
             </div>
           </motion.div>
         )}

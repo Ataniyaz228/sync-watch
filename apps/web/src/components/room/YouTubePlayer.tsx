@@ -18,7 +18,6 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
     const [, setReadyFlag] = useState(false);
     const lastTimeRef = useRef(0);
 
-    // Store callbacks in refs — no dependency churn
     const onPlayRef = useRef(onPlay);
     const onPauseRef = useRef(onPause);
     const onSeekedRef = useRef(onSeeked);
@@ -33,25 +32,46 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
       pause: () => { try { ytPlayerRef.current?.pauseVideo(); } catch {} },
       seek: (time: number) => { try { ytPlayerRef.current?.seekTo(time, true); } catch {} },
       getCurrentTime: () => { try { return ytPlayerRef.current?.getCurrentTime() ?? 0; } catch { return 0; } },
-      // Fix: state 3 (buffering) is also "playing"
       isPlaying: () => {
         try {
           const s = ytPlayerRef.current?.getPlayerState();
-          return s === 1 || s === 3; // PLAYING or BUFFERING
+          return s === 1 || s === 3;
         } catch { return false; }
       },
     }));
 
     useEffect(() => {
       let destroyed = false;
+      let playerInstance: YT.Player | null = null;
+
+      // Properly destroy a YT player — stop audio FIRST, then destroy
+      const destroyPlayer = () => {
+        if (!playerInstance) return;
+        try {
+          // Stop audio immediately before destroying
+          playerInstance.pauseVideo();
+          playerInstance.destroy();
+        } catch {
+          // If destroy fails, forcefully remove the iframe from DOM
+          try {
+            const iframe = (playerInstance as unknown as { getIframe?: () => HTMLIFrameElement }).getIframe?.();
+            iframe?.remove();
+          } catch {}
+        }
+        playerInstance = null;
+        ytPlayerRef.current = null;
+      };
 
       const createPlayer = () => {
         if (destroyed || !containerRef.current) return;
-        containerRef.current.innerHTML = '';
+
+        // Destroy existing player BEFORE creating new one
+        destroyPlayer();
+
         const playerDiv = document.createElement('div');
         containerRef.current.appendChild(playerDiv);
 
-        ytPlayerRef.current = new YT.Player(playerDiv, {
+        playerInstance = new YT.Player(playerDiv, {
           videoId,
           width: '100%',
           height: '100%',
@@ -71,14 +91,10 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
             },
             onStateChange: (event: YT.OnStateChangeEvent) => {
               if (destroyed) return;
-              const time = ytPlayerRef.current?.getCurrentTime() ?? 0;
+              const time = playerInstance?.getCurrentTime() ?? 0;
               switch (event.data) {
-                case 1: // PLAYING
-                  onPlayRef.current?.(time);
-                  break;
-                case 2: // PAUSED
-                  onPauseRef.current?.(time);
-                  break;
+                case 1: onPlayRef.current?.(time); break;
+                case 2: onPauseRef.current?.(time); break;
               }
               const drift = Math.abs(time - lastTimeRef.current);
               if (drift > 1 && event.data === 1) {
@@ -88,6 +104,7 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
             },
           },
         });
+        ytPlayerRef.current = playerInstance;
       };
 
       if (!window.YT || !window.YT.Player) {
@@ -97,21 +114,32 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
           tag.async = true;
           document.body.appendChild(tag);
         }
-        const prev = window.onYouTubeIframeAPIReady;
-        window.onYouTubeIframeAPIReady = () => {
-          prev?.();
-          createPlayer();
+        // Use a polling approach instead of callback chaining to avoid leaks
+        const checkReady = setInterval(() => {
+          if (window.YT && window.YT.Player) {
+            clearInterval(checkReady);
+            createPlayer();
+          }
+        }, 100);
+
+        return () => {
+          destroyed = true;
+          clearInterval(checkReady);
+          setReadyFlag(false);
+          destroyPlayer();
+          // Clear container to remove any orphaned iframes
+          if (containerRef.current) containerRef.current.innerHTML = '';
         };
       } else {
         createPlayer();
-      }
 
-      return () => {
-        destroyed = true;
-        setReadyFlag(false);
-        try { ytPlayerRef.current?.destroy(); } catch {}
-        ytPlayerRef.current = null;
-      };
+        return () => {
+          destroyed = true;
+          setReadyFlag(false);
+          destroyPlayer();
+          if (containerRef.current) containerRef.current.innerHTML = '';
+        };
+      }
     }, [videoId]);
 
     // Track time for seek detection

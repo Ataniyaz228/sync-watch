@@ -342,8 +342,8 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
         )}
         <div className={`chat-bubble cursor-pointer transition-all overflow-hidden shadow-sm ${
           isGif ? 'bg-transparent rounded-[14px]' : (isOwn
-            ? 'rounded-2xl rounded-br-sm'
-            : 'rounded-2xl rounded-bl-sm')
+            ? 'rounded-2xl rounded-br-[4px] px-4 py-2.5 text-[13.5px] leading-relaxed break-words font-medium'
+            : 'rounded-2xl rounded-bl-[4px] px-4 py-2.5 text-[13.5px] leading-relaxed break-words font-medium')
         }`}
           style={isOwn && !isGif ? {
             background: 'var(--chat-accent, #A8B8C4)',
@@ -357,7 +357,7 @@ function Bubble({ msg, isOwn, onReact, activeReactionId, setActiveReactionId, cu
             /* eslint-disable-next-line @next/next/no-img-element */
             <img src={msg.content} alt="GIF" className="max-w-[240px] w-full rounded-[14px] shadow-md" />
           ) : (
-            <div className="px-3.5 py-2 text-[13.5px] leading-relaxed break-words font-medium">{msg.content}</div>
+            msg.content
           )}
         </div>
 

@@ -1644,29 +1644,6 @@ body {
   color: #383838 !important;
 }
 
-/* Message bubbles */
-.mob .chat-bubble {
-  border-radius: 14px 14px 14px 3px !important;
-  background: #161616 !important;
-  border: none !important;
-  padding: 0 !important;
-}
-.mob .chat-bubble > div {
-  padding: 7px 11px !important;
-  font-size: 12px !important;
-  line-height: 1.45 !important;
-  color: #efefef !important;
-}
-.mob .chat-bubble.chat-bubble-own {
-  border-radius: 14px 14px 3px 14px !important;
-  background: rgba(168,184,196,0.09) !important;
-  border: 1px solid rgba(168,184,196,0.19) !important;
-}
-
-/* Messages area background */
-.mob .flex-1.overflow-y-auto {
-  background: #080808 !important;
-}
 
 /* ═══ Mobile Bottom Tab Bar ═══ */
 

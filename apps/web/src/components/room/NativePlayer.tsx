@@ -31,6 +31,7 @@ const NativePlayer = forwardRef<VideoPlayerAPI, NativePlayerProps>(
       },
       getCurrentTime: () => videoRef.current?.currentTime ?? 0,
       isPlaying: () => !!videoRef.current && !videoRef.current.paused,
+      setPlaybackRate: (rate: number) => { if (videoRef.current) videoRef.current.playbackRate = rate; },
     }));
 
     useEffect(() => {

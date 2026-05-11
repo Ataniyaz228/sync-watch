@@ -77,6 +77,7 @@ export interface RoomState {
   resolvedUrl?: string;
   title?: string;
   updatedAt: number;
+  controlMode?: 'free' | 'cinema';
 }
 
 // Socket.io event payloads
@@ -85,12 +86,14 @@ export interface ServerToClientEvents {
   'room:user-joined': (data: { userId: string; username: string; usersCount: number; users: string[] }) => void;
   'room:user-left': (data: { userId: string; username: string; usersCount: number }) => void;
   'room:error': (data: { message: string }) => void;
-  'video:play': (data: { currentTime: number; userId: string }) => void;
-  'video:pause': (data: { currentTime: number; userId: string }) => void;
-  'video:seek': (data: { currentTime: number; userId: string }) => void;
+  'room:mode-changed': (data: { mode: 'free' | 'cinema' }) => void;
+  'video:play': (data: { currentTime: number; userId: string; executeAt?: number }) => void;
+  'video:pause': (data: { currentTime: number; userId: string; executeAt?: number }) => void;
+  'video:seek': (data: { currentTime: number; userId: string; executeAt?: number }) => void;
   'video:url-changed': (data: VideoResolution & { userId: string }) => void;
   'video:sync-state': (data: RoomState) => void;
-  'video:sync-correction': (data: { currentTime: number; isPlaying: boolean }) => void;
+  'video:sync-correction': (data: { currentTime: number; isPlaying: boolean; serverTs: number }) => void;
+  'video:heartbeat': (data: { position: number; serverTs: number }) => void;
   'chat:message': (data: ChatMessage) => void;
   'chat:history': (data: ChatMessage[]) => void;
   'chat:reaction': (data: { messageId: string; reaction: ChatReaction; action: 'add' | 'remove' }) => void;
@@ -113,11 +116,14 @@ export interface ServerToClientEvents {
   'voice:ice-candidate': (data: { candidate: string; from: string }) => void;
   'voice:user-joined': (data: { userId: string; username: string }) => void;
   'voice:user-left': (data: { userId: string }) => void;
+  // Clock sync
+  'time:pong': (data: { t1: number; t2: number }) => void;
 }
 
 export interface ClientToServerEvents {
   'room:join': (data: { roomSlug: string; username: string; userId: string }) => void;
   'room:leave': (data: { roomSlug: string }) => void;
+  'room:set-mode': (data: { roomSlug: string; mode: 'free' | 'cinema' }) => void;
   'video:play': (data: { roomSlug: string; currentTime: number }) => void;
   'video:pause': (data: { roomSlug: string; currentTime: number }) => void;
   'video:seek': (data: { roomSlug: string; currentTime: number }) => void;
@@ -148,4 +154,6 @@ export interface ClientToServerEvents {
   'voice:ice-candidate': (data: { roomSlug: string; candidate: string; targetUserId: string }) => void;
   'voice:join': (data: { roomSlug: string }) => void;
   'voice:leave': (data: { roomSlug: string }) => void;
+  // Clock sync
+  'time:ping': (data: { t1: number; rtt?: number }) => void;
 }

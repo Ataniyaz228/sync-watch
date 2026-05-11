@@ -6,6 +6,7 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useSocket } from '@/hooks/useSocket';
 import { useChat } from '@/hooks/useChat';
 import { useVideoSync, type VideoPlayerAPI } from '@/hooks/useVideoSync';
+import { useClockSync } from '@/hooks/useClockSync';
 import { useVoiceCall } from '@/hooks/useVoiceCall';
 import { useWatchProgress } from '@/hooks/useWatchProgress';
 import VideoPlayer from './VideoPlayer';
@@ -66,9 +67,12 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
   const { emit, on } = useSocket(roomSlug, username, userId);
   const getPlayer = useCallback(() => playerRef.current, []);
 
-  const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest, videoRequest, acceptVideoRequest, rejectVideoRequest } = useVideoSync({
+  // Clock sync — must come before useVideoSync
+  const { serverNow } = useClockSync({ on, emit: emit as (event: string, data: unknown) => void });
+
+  const { onLocalPlay, onLocalPause, onLocalSeek, pauseRequest, acceptPauseRequest, rejectPauseRequest, videoRequest, acceptVideoRequest, rejectVideoRequest, syncStatus, controlMode, setMode } = useVideoSync({
     on, emit: emit as (event: string, data: unknown) => void,
-    roomSlug, getPlayer, isHost,
+    roomSlug, getPlayer, isHost, serverNow,
   });
 
   const { messages, sendMessage, reactToMessage, messagesEndRef } = useChat({
@@ -162,7 +166,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
     return () => { u(); clearTimeout(t); };
   }, [on, emit, roomSlug]);
 
-  // Host: periodically broadcast position so guests stay in sync
+  // Host: periodically broadcast position so guests stay in sync (2s heartbeat)
   useEffect(() => {
     if (!isHost || !videoUrl) return;
     const interval = setInterval(() => {
@@ -172,7 +176,7 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
       if (currentTime > 0) {
         emit('video:sync-position', { roomSlug, currentTime, isPlaying: player.isPlaying() });
       }
-    }, 5000);
+    }, 2000); // 2s instead of 5s for faster drift correction
     return () => clearInterval(interval);
   }, [isHost, videoUrl, emit, roomSlug]);
 
@@ -569,6 +573,14 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             <div className="dt-sep" />
             <span className="dt-rname">{roomName}</span>
             <span className="dt-host-b">{isHost ? 'host' : 'viewer'}</span>
+            {/* Sync indicator dot */}
+            <div title={syncStatus === 'synced' ? 'Synced' : syncStatus === 'correcting' ? 'Correcting drift…' : 'Seeking to sync'}
+              style={{
+                width: 7, height: 7, borderRadius: '50%', flexShrink: 0, marginLeft: 6,
+                background: syncStatus === 'synced' ? '#5CB87A' : syncStatus === 'correcting' ? '#D9A74A' : '#E5584F',
+                boxShadow: `0 0 5px ${syncStatus === 'synced' ? '#5CB87A' : syncStatus === 'correcting' ? '#D9A74A' : '#E5584F'}`,
+                transition: 'background 0.4s, box-shadow 0.4s',
+              }} />
           </div>
           <div className="dt-tr">
             {isInCall ? (
@@ -606,6 +618,18 @@ export default function RoomView({ roomSlug, roomName, userId, username, created
             <button className="dt-icon-btn" onClick={() => router.push(`/room/${roomSlug}/history`)} title="История">
               <i className="ti ti-history" style={{ fontSize: 14 }} />
             </button>
+            {/* Mode toggle — host only */}
+            {isHost && (
+              <button
+                className="dt-icon-btn"
+                onClick={() => setMode(controlMode === 'free' ? 'cinema' : 'free')}
+                title={controlMode === 'free' ? 'Режим: Свободный — нажми для Cinema' : 'Режим: Cinema — нажми для Свободного'}
+                style={{ fontSize: 11, fontWeight: 600, letterSpacing: '0.03em', color: controlMode === 'free' ? 'var(--dt-a)' : 'var(--dt-t3)', gap: 4, display: 'flex', alignItems: 'center' }}
+              >
+                <i className={`ti ${controlMode === 'free' ? 'ti-users' : 'ti-crown'}`} style={{ fontSize: 13 }} />
+                {controlMode === 'free' ? 'free' : 'cinema'}
+              </button>
+            )}
             <div className="dt-avs">
               {users.slice(0, 4).map((u, i) => {
                 const bgs = ['var(--dt-a)','#1e2e3a','#2a1e3a','#1e3a2a'];

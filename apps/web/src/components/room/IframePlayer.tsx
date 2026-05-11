@@ -118,6 +118,7 @@ const IframePlayer = forwardRef<VideoPlayerAPI, IframePlayerProps>(
       getCurrentTime: () => currentTimeRef.current,
       isPlaying: () => isPlayingRef.current,
       getDuration: () => durationRef.current,
+      setPlaybackRate: () => { /* iframes don't support playback rate control */ },
     }));
 
     return (

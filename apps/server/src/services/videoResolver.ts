@@ -48,19 +48,21 @@ function detectVideoType(url: string): { type: VideoType; resolvedUrl: string; t
     return { type: 'mp4', resolvedUrl: url };
   }
 
-  // VK Video / Clips — convert to embed format
-  // Matches: vk.com/video-123_456, vk.com/clip-123_456, vkvideo.ru/video-123_456, etc.
-  const vkRegex = /(?:vk\.com|vkvideo\.ru)\/(?:(?:video|clip|.*z=video)(-?\d+)_(\d+))/;
-  const vkMatch = url.match(vkRegex);
-  if (vkMatch) {
-    const oid = vkMatch[1];
-    const id = vkMatch[2];
-    const embedUrl = `https://vk.com/video_ext.php?oid=${oid}&id=${id}&hd=2`;
-    return { type: 'iframe', resolvedUrl: embedUrl };
-  }
+  // NOTE: VK is intentionally NOT detected here — we let yt-dlp handle it
+  // to get a direct streamable URL instead of an uncontrollable iframe.
 
-  // Known iframe domains
-  for (const domain of IFRAME_DOMAINS) {
+  // Known iframe embed domains (not VK — handled by yt-dlp)
+  const iframeDomains = [
+    'kodik.info',
+    'kodik.cc',
+    'anilibria.tv',
+    'video.sibnet.ru',
+    'ok.ru/videoembed',
+    'vk.com/video_ext',
+    'rutube.ru/play/embed',
+    'dailymotion.com/embed',
+  ];
+  for (const domain of iframeDomains) {
     if (lowerUrl.includes(domain)) {
       return { type: 'iframe', resolvedUrl: url };
     }

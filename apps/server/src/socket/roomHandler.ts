@@ -22,6 +22,15 @@ function getQueue(roomSlug: string): QueueItem[] {
   return roomQueues.get(roomSlug)!;
 }
 
+// In-memory control modes per room
+const roomModes = new Map<string, 'free' | 'cinema'>();
+function getMode(roomSlug: string): 'free' | 'cinema' {
+  return roomModes.get(roomSlug) ?? 'cinema';
+}
+
+// Per-socket RTT tracking (for executeAt computation)
+const socketRTT = new Map<string, number>();
+
 export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
   socket.on('room:join', async (data) => {
     const { roomSlug, username, userId } = data;
@@ -63,13 +72,30 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     // Send current room state to the new user
     const state = await getRoomState(roomSlug);
     if (state) {
-      socket.emit('video:sync-state', state);
+      socket.emit('video:sync-state', { ...state, controlMode: getMode(roomSlug) });
     }
 
     // Send queue state
     socket.emit('queue:state', getQueue(roomSlug));
 
     console.log(`[Room] ${username} joined ${roomSlug} (${usersCount} users)`);
+  });
+
+  // ── Clock sync ──
+  socket.on('time:ping', (data) => {
+    const { t1, rtt } = data;
+    if (rtt !== undefined) socketRTT.set(socket.id, rtt);
+    socket.emit('time:pong', { t1, t2: Date.now() });
+  });
+
+  // ── Control mode ──
+  socket.on('room:set-mode', async (data) => {
+    const { roomSlug, mode } = data;
+    roomModes.set(roomSlug, mode);
+    io.to(roomSlug).emit('room:mode-changed', { mode });
+    // Persist in room state
+    const state = await getRoomState(roomSlug);
+    await setRoomState(roomSlug, { ...state!, controlMode: mode, updatedAt: Date.now() });
   });
 
   socket.on('room:leave', (data) => {
@@ -200,47 +226,93 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
   socket.on('video:play', async (data) => {
     const { roomSlug, currentTime } = data;
     const userId = (socket.data as { userId?: string }).userId || 'unknown';
+    const mode = getMode(roomSlug);
 
-    socket.to(roomSlug).emit('video:play', { currentTime, userId });
+    // In cinema mode, only host can broadcast directly
+    const db = getDb();
+    let isHostAction = false;
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        isHostAction = room.length > 0 && room[0].createdBy === userId;
+      } catch {}
+    }
+    if (mode === 'cinema' && !isHostAction) return; // guests can't emit directly in cinema mode
 
-    // Update room state
+    // Compute executeAt using average of all guests' RTTs
+    const roomSockets = io.sockets.adapter.rooms.get(roomSlug);
+    let guestRTT = 0;
+    if (roomSockets) {
+      for (const sid of roomSockets) {
+        if (sid !== socket.id) guestRTT = Math.max(guestRTT, socketRTT.get(sid) ?? 0);
+      }
+    }
+    const executeAt = Date.now() + Math.ceil(guestRTT / 2);
+
+    socket.to(roomSlug).emit('video:play', { currentTime, userId, executeAt });
+
     const state = await getRoomState(roomSlug);
-    await setRoomState(roomSlug, {
-      ...state,
-      currentTime,
-      isPlaying: true,
-      updatedAt: Date.now(),
-    });
+    await setRoomState(roomSlug, { ...state!, currentTime, isPlaying: true, updatedAt: Date.now() });
   });
 
   socket.on('video:pause', async (data) => {
     const { roomSlug, currentTime } = data;
     const userId = (socket.data as { userId?: string }).userId || 'unknown';
+    const mode = getMode(roomSlug);
 
-    socket.to(roomSlug).emit('video:pause', { currentTime, userId });
+    const db = getDb();
+    let isHostAction = false;
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        isHostAction = room.length > 0 && room[0].createdBy === userId;
+      } catch {}
+    }
+    if (mode === 'cinema' && !isHostAction) return;
+
+    const roomSockets = io.sockets.adapter.rooms.get(roomSlug);
+    let guestRTT = 0;
+    if (roomSockets) {
+      for (const sid of roomSockets) {
+        if (sid !== socket.id) guestRTT = Math.max(guestRTT, socketRTT.get(sid) ?? 0);
+      }
+    }
+    const executeAt = Date.now() + Math.ceil(guestRTT / 2);
+
+    socket.to(roomSlug).emit('video:pause', { currentTime, userId, executeAt });
 
     const state = await getRoomState(roomSlug);
-    await setRoomState(roomSlug, {
-      ...state,
-      currentTime,
-      isPlaying: false,
-      updatedAt: Date.now(),
-    });
+    await setRoomState(roomSlug, { ...state!, currentTime, isPlaying: false, updatedAt: Date.now() });
   });
 
   socket.on('video:seek', async (data) => {
     const { roomSlug, currentTime } = data;
     const userId = (socket.data as { userId?: string }).userId || 'unknown';
+    const mode = getMode(roomSlug);
 
-    socket.to(roomSlug).emit('video:seek', { currentTime, userId });
+    const db = getDb();
+    let isHostAction = false;
+    if (db) {
+      try {
+        const room = await db.select().from(schema.rooms).where(eq(schema.rooms.slug, roomSlug)).limit(1);
+        isHostAction = room.length > 0 && room[0].createdBy === userId;
+      } catch {}
+    }
+    if (mode === 'cinema' && !isHostAction) return;
+
+    const roomSockets = io.sockets.adapter.rooms.get(roomSlug);
+    let guestRTT = 0;
+    if (roomSockets) {
+      for (const sid of roomSockets) {
+        if (sid !== socket.id) guestRTT = Math.max(guestRTT, socketRTT.get(sid) ?? 0);
+      }
+    }
+    const executeAt = Date.now() + Math.ceil(guestRTT / 2);
+
+    socket.to(roomSlug).emit('video:seek', { currentTime, userId, executeAt });
 
     const state = await getRoomState(roomSlug);
-    await setRoomState(roomSlug, {
-      ...state,
-      currentTime,
-      isPlaying: state?.isPlaying ?? false,
-      updatedAt: Date.now(),
-    });
+    await setRoomState(roomSlug, { ...state!, currentTime, isPlaying: state?.isPlaying ?? false, updatedAt: Date.now() });
   });
 
   socket.on('video:url-change', async (data) => {
@@ -306,19 +378,17 @@ export function setupRoomHandler(io: TypedIO, socket: TypedSocket) {
     }
   });
 
-  // Host periodically sends position — update state + forward to guests
+  // Host periodically sends position — update state + forward to guests as heartbeat
   socket.on('video:sync-position', async (data: { roomSlug: string; currentTime: number; isPlaying: boolean }) => {
     const { roomSlug, currentTime, isPlaying } = data;
+    const serverTs = Date.now();
     // Update stored state
     const state = await getRoomState(roomSlug);
-    await setRoomState(roomSlug, {
-      ...state,
-      currentTime,
-      isPlaying,
-      updatedAt: Date.now(),
-    });
-    // Forward to all OTHER clients in room (not the sender)
-    socket.to(roomSlug).emit('video:sync-correction', { currentTime, isPlaying });
+    await setRoomState(roomSlug, { ...state!, currentTime, isPlaying, updatedAt: serverTs });
+    // Send heartbeat for drift correction (includes serverTs for latency calculation)
+    socket.to(roomSlug).emit('video:heartbeat', { position: currentTime, serverTs });
+    // Also send legacy correction event for play/pause state alignment
+    socket.to(roomSlug).emit('video:sync-correction', { currentTime, isPlaying, serverTs });
   });
 
   // ─── Queue handlers ───

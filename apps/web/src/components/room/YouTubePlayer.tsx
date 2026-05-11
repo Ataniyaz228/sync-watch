@@ -40,6 +40,14 @@ const YouTubePlayer = forwardRef<VideoPlayerAPI, YouTubePlayerProps>(
           return s === 1 || s === 3; // PLAYING or BUFFERING
         } catch { return false; }
       },
+      // YouTube only supports discrete rates; round to nearest available
+      setPlaybackRate: (rate: number) => {
+        try {
+          const available = [0.25, 0.5, 0.75, 1, 1.25, 1.5, 1.75, 2];
+          const nearest = available.reduce((a, b) => Math.abs(b - rate) < Math.abs(a - rate) ? b : a);
+          ytPlayerRef.current?.setPlaybackRate(nearest);
+        } catch {}
+      },
     }));
 
     useEffect(() => {
